@@ -134,3 +134,12 @@ app/src/main/java/com/daphile/remote/
 
 - 1.1.0：新增歌词、音频输出信息、文件夹浏览、扫描、在线封面、锁屏媒体卡片、主机电源中心；修复队列跳转导航与通知权限问题。
 - 1.0.0：首个可用版本（播放控制、音乐库、多服务器、小部件）。
+
+## 许可证
+
+本项目基于 [GNU General Public License v3.0](LICENSE) 开源，SPDX 标识：`GPL-3.0-only`。
+
+Copyright (C) 2026 panjiasen007-lab
+
+你可以自由使用、修改和分发本软件，但分发修改后的版本时必须以相同许可证公开源代码。详见 [LICENSE](LICENSE)。
+
