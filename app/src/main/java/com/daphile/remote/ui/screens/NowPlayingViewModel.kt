@@ -5,7 +5,9 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.daphile.remote.DaphileApp
 import com.daphile.remote.data.model.HostPowerAction
+import com.daphile.remote.data.model.Lyrics
 import com.daphile.remote.data.model.SleepAction
+import com.daphile.remote.data.model.Track
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -27,17 +29,53 @@ class NowPlayingViewModel(application: Application) : AndroidViewModel(applicati
 
     private var volumeJob: Job? = null
     private var pendingVolume: Int? = null
+    private var lyricsJob: Job? = null
 
     private val _coverOverride = MutableStateFlow<String?>(null)
     val coverOverride = _coverOverride.asStateFlow()
+
+    private val _lyrics = MutableStateFlow<Lyrics?>(null)
+    val lyrics = _lyrics.asStateFlow()
+
+    private val _lyricsLoading = MutableStateFlow(false)
+    val lyricsLoading = _lyricsLoading.asStateFlow()
+
+    private val _favorite = MutableStateFlow(false)
+    val favorite = _favorite.asStateFlow()
 
     init {
         viewModelScope.launch {
             repository.nowPlaying
                 .map { it?.track?.id }
                 .distinctUntilChanged()
-                .collect { _coverOverride.value = null }
+                .collect { trackId ->
+                    _coverOverride.value = null
+                    _favorite.value = false
+                    val track = repository.nowPlaying.value?.track
+                    if (track != null) {
+                        loadLyrics(track)
+                    } else {
+                        lyricsJob?.cancel()
+                        _lyrics.value = null
+                        _lyricsLoading.value = false
+                    }
+                }
         }
+    }
+
+    private fun loadLyrics(track: Track) {
+        lyricsJob?.cancel()
+        _lyrics.value = null
+        _lyricsLoading.value = true
+        lyricsJob = viewModelScope.launch {
+            val result = runCatching { repository.lyricsForTrack(track) }.getOrNull()
+            _lyrics.value = result
+            _lyricsLoading.value = false
+        }
+    }
+
+    fun refreshLyrics() {
+        repository.nowPlaying.value?.track?.let { loadLyrics(it) }
     }
 
     suspend fun matchCover(force: Boolean = true): Boolean {
@@ -90,7 +128,12 @@ class NowPlayingViewModel(application: Application) : AndroidViewModel(applicati
     suspend fun removeQueueItem(index: Int) = repository.removeQueueItem(index)
     suspend fun clearQueue() = repository.clearQueue()
     suspend fun saveQueue(name: String) = repository.saveQueue(name)
-    suspend fun addCurrentFavorite() = repository.addCurrentFavorite()
+
+    suspend fun addCurrentFavorite() {
+        repository.addCurrentFavorite()
+        _favorite.value = true
+    }
+
     suspend fun startSleepTimer(minutes: Int, action: SleepAction) =
         repository.startSleepTimer(minutes, action)
     suspend fun cancelSleepTimer() = repository.cancelSleepTimer()

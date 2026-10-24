@@ -46,6 +46,7 @@ import com.daphile.remote.data.model.Track
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.common.TrackRow
 import kotlinx.coroutines.launch
 
@@ -119,7 +120,7 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = "歌曲",
+                title = strings.songsTitle,
                 onBack = { navController.popBackStack() },
                 actions = { Text("$total 首", style = MaterialTheme.typography.labelMedium) }
             )

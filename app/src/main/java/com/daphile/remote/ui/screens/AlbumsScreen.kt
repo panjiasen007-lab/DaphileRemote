@@ -1,6 +1,10 @@
+@file:OptIn(ExperimentalFoundationApi::class)
+
 package com.daphile.remote.ui.screens
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,14 +26,18 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.LibraryMusic
+import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material.icons.rounded.Sort
 import androidx.compose.material.icons.rounded.ViewList
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -55,6 +63,7 @@ import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,6 +84,7 @@ fun AlbumsScreen(
     val viewModel: LibraryViewModel = viewModel()
     val server by viewModel.server.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val t = strings
 
     var grid by rememberSaveable { mutableStateOf(true) }
     var sort by rememberSaveable { mutableStateOf(initialSort) }
@@ -84,6 +94,19 @@ fun AlbumsScreen(
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var sortMenu by remember { mutableStateOf(false) }
+    var actionAlbum by remember { mutableStateOf<Album?>(null) }
+
+    val snackbar = remember { SnackbarHostState() }
+    fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
+        scope.launch {
+            try {
+                block()
+                if (successMessage != null) snackbar.showSnackbar(successMessage)
+            } catch (error: Throwable) {
+                snackbar.showSnackbar(friendlyErrorMessage(error))
+            }
+        }
+    }
 
     val gridState = rememberLazyGridState()
     val lastVisible by remember {
@@ -141,21 +164,29 @@ fun AlbumsScreen(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize()) {
         PageHeader(
             title = title,
             onBack = { navController.popBackStack() },
             actions = {
+                IconButton(
+                    onClick = {
+                        runCommand(t.randomAlbum) { viewModel.randomAlbum() }
+                    }
+                ) {
+                    Icon(Icons.Rounded.Shuffle, contentDescription = strings.randomAlbum)
+                }
                 Box {
                     IconButton(onClick = { sortMenu = true }) {
-                        Icon(Icons.Rounded.Sort, contentDescription = "排序")
+                        Icon(Icons.Rounded.Sort, contentDescription = strings.sortBy)
                     }
                     DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                         listOf(
-                            "album" to "专辑名",
-                            "artistalbum" to "艺术家",
-                            "yearalbum" to "年份",
-                            "new" to "最近添加"
+                            "album" to strings.sortAlbum,
+                            "artistalbum" to strings.sortArtist,
+                            "yearalbum" to strings.sortYear,
+                            "new" to strings.sortNew
                         ).forEach { (value, label) ->
                             DropdownMenuItem(
                                 text = {
@@ -175,7 +206,7 @@ fun AlbumsScreen(
                 IconButton(onClick = { grid = !grid }) {
                     Icon(
                         imageVector = if (grid) Icons.Rounded.ViewList else Icons.Rounded.GridView,
-                        contentDescription = if (grid) "列表视图" else "网格视图"
+                        contentDescription = if (grid) strings.listView else strings.gridView
                     )
                 }
             }
@@ -220,7 +251,8 @@ fun AlbumsScreen(
                         AlbumGridCard(
                             album = album,
                             coverUrl = server?.coverUrl(album.artworkId),
-                            onClick = { navController.navigate(Routes.album(album.id)) }
+                            onClick = { navController.navigate(Routes.album(album.id)) },
+                            onLongClick = { actionAlbum = album }
                         )
                     }
                 } else {
@@ -228,7 +260,8 @@ fun AlbumsScreen(
                         AlbumListRow(
                             album = album,
                             coverUrl = server?.coverUrl(album.artworkId),
-                            onClick = { navController.navigate(Routes.album(album.id)) }
+                            onClick = { navController.navigate(Routes.album(album.id)) },
+                            onLongClick = { actionAlbum = album }
                         )
                     }
                 }
@@ -259,12 +292,56 @@ fun AlbumsScreen(
                 }
             }
         }
+        }
+        SnackbarHost(
+            hostState = snackbar,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+    }
+
+    actionAlbum?.let { album ->
+        AlertDialog(
+            onDismissRequest = { actionAlbum = null },
+            title = { Text(album.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+            text = { Text(listOf(album.artist, album.year).filter { it.isNotBlank() && it != "0" }.joinToString(" · ")) },
+            confirmButton = {
+                TextButton(onClick = {
+                    actionAlbum = null
+                    runCommand("正在播放 ${album.title}") { viewModel.playAlbum(album.id) }
+                }) { Text("播放全部") }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        actionAlbum = null
+                        runCommand("已加入队列") { viewModel.queueAlbum(album.id) }
+                    }) { Text("加入队列") }
+                    TextButton(onClick = {
+                        val target = album
+                        actionAlbum = null
+                        navController.navigate(Routes.album(target.id))
+                    }) { Text("查看") }
+                }
+            }
+        )
     }
 }
 
 @Composable
-private fun AlbumGridCard(album: Album, coverUrl: String?, onClick: () -> Unit) {
-    Column(modifier = Modifier.clickable(onClick = onClick)) {
+private fun AlbumGridCard(
+    album: Album,
+    coverUrl: String?,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier.combinedClickable(
+            onClick = onClick,
+            onLongClick = onLongClick
+        )
+    ) {
         CoverArt(
             url = coverUrl,
             modifier = Modifier.fillMaxWidth().aspectRatio(1f),
@@ -289,11 +366,16 @@ private fun AlbumGridCard(album: Album, coverUrl: String?, onClick: () -> Unit) 
 }
 
 @Composable
-private fun AlbumListRow(album: Album, coverUrl: String?, onClick: () -> Unit) {
+private fun AlbumListRow(
+    album: Album,
+    coverUrl: String?,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(vertical = 7.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

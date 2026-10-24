@@ -63,6 +63,7 @@ object LmsParser {
             mode = now.mode,
             currentTitle = now.track?.title ?: stringAny(status, "current_title"),
             currentArtist = now.track?.artist.orEmpty(),
+            canSetVolume = now.canSetVolume,
             syncMaster = master,
             syncSlaves = slaves
         )
@@ -104,7 +105,9 @@ object LmsParser {
             track = currentTrack,
             queue = queue,
             canSeek = truthy(status, "can_seek", default = true),
-            canSetVolume = truthy(status, "digital_volume_control", default = true),
+            // 达菲的「音量控制」开关关闭时，digital_volume_control / use_volume_control 均为 0
+            canSetVolume = truthy(status, "digital_volume_control", default = true) &&
+                truthy(status, "use_volume_control", default = true),
             playlistTimestamp = stringAny(status, "playlist_timestamp")
         )
     }

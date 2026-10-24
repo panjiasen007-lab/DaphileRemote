@@ -3,7 +3,6 @@ package com.daphile.remote.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +23,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,6 +46,9 @@ import com.daphile.remote.DaphileApp
 import com.daphile.remote.R
 import com.daphile.remote.data.model.ConnectionState
 import com.daphile.remote.ui.common.ConnectionBanner
+import com.daphile.remote.ui.i18n.LocalStrings
+import com.daphile.remote.ui.i18n.UiStrings
+import com.daphile.remote.ui.i18n.rememberUiStrings
 import com.daphile.remote.ui.navigation.Routes
 import com.daphile.remote.ui.screens.AlbumDetailScreen
 import com.daphile.remote.ui.screens.AlbumsScreen
@@ -64,6 +67,7 @@ import com.daphile.remote.ui.screens.ServerListScreen
 import com.daphile.remote.ui.screens.SettingsScreen
 import com.daphile.remote.ui.screens.SongsScreen
 import com.daphile.remote.ui.screens.SystemInfoScreen
+import com.daphile.remote.ui.theme.resolveThemeDark
 
 private data class BottomTab(
     val route: String,
@@ -71,12 +75,12 @@ private data class BottomTab(
     val icon: ImageVector
 )
 
-private val bottomTabs = listOf(
-    BottomTab(Routes.NOW, "正在播放", Icons.Rounded.PlayCircle),
-    BottomTab(Routes.LIBRARY, "音乐库", Icons.Rounded.LibraryMusic),
-    BottomTab(Routes.RADIO, "电台与收藏", Icons.Rounded.Radio),
-    BottomTab(Routes.PLAYERS, "播放器", Icons.Rounded.Speaker),
-    BottomTab(Routes.SETTINGS, "设置", Icons.Rounded.Settings)
+private fun bottomTabs(s: UiStrings) = listOf(
+    BottomTab(Routes.NOW, s.navNow, Icons.Rounded.PlayCircle),
+    BottomTab(Routes.LIBRARY, s.navLibrary, Icons.Rounded.LibraryMusic),
+    BottomTab(Routes.RADIO, s.navRadio, Icons.Rounded.Radio),
+    BottomTab(Routes.PLAYERS, s.navPlayers, Icons.Rounded.Speaker),
+    BottomTab(Routes.SETTINGS, s.navSettings, Icons.Rounded.Settings)
 )
 
 @Composable
@@ -88,12 +92,9 @@ fun DaphileRemoteApp() {
     val connection by graph.repository.connection.collectAsStateWithLifecycle()
     val server by graph.repository.server.collectAsStateWithLifecycle()
 
-    val dark = when (appSettings.theme) {
-        "light" -> false
-        "system" -> isSystemInDarkTheme()
-        else -> true
-    }
+    val dark = resolveThemeDark(appSettings.theme)
     SystemBars(dark = dark)
+    val strings = rememberUiStrings(appSettings.language)
 
     if (servers == null) {
         SplashScreen()
@@ -107,14 +108,16 @@ fun DaphileRemoteApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = currentRoute in Routes.topLevel
+    val tabs = bottomTabs(strings)
 
+    CompositionLocalProvider(LocalStrings provides strings) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
-                    bottomTabs.forEach { tab ->
+                    tabs.forEach { tab ->
                         NavigationBarItem(
                             selected = currentRoute == tab.route,
                             onClick = {
@@ -250,6 +253,7 @@ fun DaphileRemoteApp() {
                 composable(Routes.AUDIO_OUTPUT) { AudioOutputScreen(navController) }
             }
         }
+    }
     }
 }
 

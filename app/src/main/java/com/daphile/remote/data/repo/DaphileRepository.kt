@@ -5,6 +5,7 @@ import android.os.SystemClock
 import com.daphile.remote.data.local.SettingsStore
 import com.daphile.remote.data.model.Album
 import com.daphile.remote.data.model.AppSettings
+import com.daphile.remote.data.model.AppLanguage
 import com.daphile.remote.data.model.Artist
 import com.daphile.remote.data.model.BrowserItem
 import com.daphile.remote.data.model.ConnectionState
@@ -14,6 +15,7 @@ import com.daphile.remote.data.model.HostPowerAction
 import com.daphile.remote.data.model.LmsError
 import com.daphile.remote.data.model.LmsException
 import com.daphile.remote.data.model.Lyrics
+import com.daphile.remote.data.model.LyricsSource
 import com.daphile.remote.data.model.NowPlaying
 import com.daphile.remote.data.model.Paged
 import com.daphile.remote.data.model.Player
@@ -56,6 +58,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import java.io.File
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
@@ -676,18 +679,72 @@ class DaphileRepository(
         }
     }
 
-    suspend fun lyricsForTrack(track: Track): Lyrics? {
+    /**
+     * 获取曲目歌词。
+     * - [source] 为 [LyricsSource.AUTO] 时优先本地 .lrc 与 Daphile 内置歌词，再走在线自动链路；
+     * - 指定来源时跳过本地，直接向该歌词源请求；
+     * - [forceOnline] 为 true 时跳过所有本地缓存并重新在线匹配。
+     */
+    suspend fun lyricsForTrack(
+        track: Track,
+        source: LyricsSource = LyricsSource.AUTO,
+        forceOnline: Boolean = false
+    ): Lyrics? {
         val serverConfig = _server.value ?: return null
-        if (track.id.toLongOrNull() != null) {
-            val local = runCatching {
-                client.songInfo(serverConfig, track.id).optString("lyrics")
-            }.getOrNull()
-            if (!local.isNullOrBlank()) {
-                onlineMetadata.parseLyricsText(local, "Daphile 本地歌词")?.let { return it }
+        if (!forceOnline && source == LyricsSource.AUTO) {
+            // 优先使用本机已保存的 .lrc
+            runCatching { onlineMetadata.savedLyricsPath(track) }.getOrNull()?.let { path ->
+                if (path.isNotBlank()) {
+                    runCatching { File(path).readText() }
+                        .getOrNull()
+                        ?.let { raw -> onlineMetadata.parseLyricsText(raw, "本地歌词") }
+                        ?.let { return it }
+                }
+            }
+            if (track.id.toLongOrNull() != null) {
+                val local = runCatching {
+                    client.songInfo(serverConfig, track.id).optString("lyrics")
+                }.getOrNull()
+                if (!local.isNullOrBlank()) {
+                    onlineMetadata.parseLyricsText(local, "Daphile 本地歌词")?.let {
+                        runCatching { onlineMetadata.saveLyrics(track, it) }
+                        return it
+                    }
+                }
             }
         }
         if (!settings.appSettings.first().onlineMetadataEnabled) return null
-        return runCatching { onlineMetadata.lyricsFor(track) }.getOrNull()
+        return runCatching {
+            if (source == LyricsSource.AUTO) {
+                onlineMetadata.lyricsFor(track, force = forceOnline)
+            } else {
+                onlineMetadata.lyricsFrom(track, source)
+            }
+        }.getOrNull()
+    }
+
+    suspend fun setLyricsSource(source: LyricsSource) = settings.setLyricsSource(source.key)
+
+    suspend fun setLanguage(language: AppLanguage) = settings.setLanguage(language.key)
+
+    /** 歌词在本机的保存路径（按 艺术家/专辑/曲名.lrc 归档）。 */
+    fun savedLyricsPath(track: Track): String? = runCatching {
+        onlineMetadata.savedLyricsPath(track)
+    }.getOrNull()
+
+    suspend fun saveLyrics(track: Track, lyrics: Lyrics): String? = runCatching {
+        onlineMetadata.saveLyrics(track, lyrics).absolutePath
+    }.getOrNull()
+
+    /** 本地歌词库根目录，用于设置页展示。 */
+    fun lyricsLibraryPath(): String = onlineMetadata.lyricsLibraryPath()
+
+    /** 统计本地歌词库中的 .lrc 文件数量。 */
+    fun lyricsLibraryCount(): Int = onlineMetadata.lyricsLibraryCount()
+
+    /** 清空本地歌词库与在线歌词缓存，返回删除的文件数。 */
+    suspend fun clearLyricsLibrary(): Int = withContext(Dispatchers.IO) {
+        onlineMetadata.clearLyricsLibrary()
     }
 
     suspend fun resolveOnlineCover(track: Track, force: Boolean = false): String? {

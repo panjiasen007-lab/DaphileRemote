@@ -68,6 +68,7 @@ import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.LoadingState
 import com.daphile.remote.ui.common.TrackRow
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -84,6 +85,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
     var showScanDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
@@ -110,7 +112,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "音乐库",
+                    text = strings.libraryTitle,
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.headlineSmall.copy(fontSize = 26.sp),
                     fontWeight = FontWeight.SemiBold
@@ -176,7 +178,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(16.dp),
-                placeholder = { Text("搜索曲目、专辑、艺术家…") },
+                placeholder = { Text(strings.searchHint) },
                 leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                 trailingIcon = {
                     if (query.isNotEmpty()) {
@@ -191,7 +193,8 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
             if (query.isBlank()) {
                 if (serverInfo != null) {
                     Text(
-                        text = "${serverInfo?.albumCount ?: 0} 张专辑 · ${serverInfo?.songCount ?: 0} 首曲目",
+                        text = "${strings.albumUnit.format(serverInfo?.albumCount ?: 0)} · " +
+                            strings.songUnit.format(serverInfo?.songCount ?: 0),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -199,38 +202,38 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                 }
                 val categories = listOf(
                     CategoryItem(
-                        title = "专辑",
-                        subtitle = "${serverInfo?.albumCount ?: 0} 张专辑",
+                        title = strings.albums,
+                        subtitle = strings.albumUnit.format(serverInfo?.albumCount ?: 0),
                         icon = Icons.Rounded.LibraryMusic
-                    ) { navController.navigate(Routes.albums("专辑")) },
+                    ) { navController.navigate(Routes.albums(t.albums)) },
                     CategoryItem(
-                        title = "歌曲",
-                        subtitle = "${serverInfo?.songCount ?: 0} 首曲目",
+                        title = strings.songs,
+                        subtitle = strings.songUnit.format(serverInfo?.songCount ?: 0),
                         icon = Icons.Rounded.MusicNote
                     ) { navController.navigate(Routes.SONGS) },
                     CategoryItem(
-                        title = "艺术家",
-                        subtitle = "${serverInfo?.artistCount ?: 0} 位艺术家",
+                        title = strings.artists,
+                        subtitle = strings.artistUnit.format(serverInfo?.artistCount ?: 0),
                         icon = Icons.Rounded.Person
                     ) { navController.navigate(Routes.browse("artists")) },
                     CategoryItem(
-                        title = "流派",
-                        subtitle = "${serverInfo?.genreCount ?: 0} 个流派",
+                        title = strings.genres,
+                        subtitle = strings.genreUnit.format(serverInfo?.genreCount ?: 0),
                         icon = Icons.Rounded.Folder
                     ) { navController.navigate(Routes.browse("genres")) },
                     CategoryItem(
-                        title = "年份",
-                        subtitle = "按年代浏览",
+                        title = strings.years,
+                        subtitle = strings.browseByYear,
                         icon = Icons.Rounded.DateRange
                     ) { navController.navigate(Routes.browse("years")) },
                     CategoryItem(
-                        title = "文件夹",
-                        subtitle = "按音乐目录浏览",
+                        title = strings.folders,
+                        subtitle = strings.browseByFolder,
                         icon = Icons.Rounded.FolderOpen
                     ) { navController.navigate(Routes.FOLDERS) },
                     CategoryItem(
-                        title = "播放列表",
-                        subtitle = "服务器保存的列表",
+                        title = strings.playlists,
+                        subtitle = strings.serverPlaylists,
                         icon = Icons.Rounded.PlaylistPlay
                     ) { navController.navigate(Routes.browse("playlists")) }
                 )
@@ -254,7 +257,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            runCommand("正在随机播放一张专辑") { viewModel.randomAlbum() }
+                            runCommand(t.randomAlbum) { viewModel.randomAlbum() }
                         },
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
@@ -271,12 +274,12 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "随机播放一张专辑",
+                                text = strings.randomAlbum,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "从整个音乐库随机挑选",
+                                text = strings.randomAlbumSub,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

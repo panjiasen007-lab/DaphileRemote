@@ -1,5 +1,7 @@
 package com.daphile.remote.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,20 +19,30 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowDropDown
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.SaveAlt
 import androidx.compose.material.icons.rounded.Subtitles
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -42,6 +54,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,9 +63,12 @@ import androidx.navigation.NavController
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.daphile.remote.data.model.Lyrics
+import com.daphile.remote.data.model.LyricsSource
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.lyricsSourceName
+import com.daphile.remote.ui.i18n.strings
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -71,6 +87,38 @@ fun LyricsScreen(navController: NavController, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     var positionMs by remember { mutableLongStateOf(0L) }
+    val context = LocalContext.current
+    val savedPath by viewModel.savedPath.collectAsStateWithLifecycle()
+    val lyricsSource by viewModel.source.collectAsStateWithLifecycle()
+    val notice by viewModel.notice.collectAsStateWithLifecycle()
+    var sourceMenu by remember { mutableStateOf(false) }
+    val t = strings
+
+    LaunchedEffect(notice) {
+        notice?.let {
+            snackbar.showSnackbar(it)
+            viewModel.clearNotice()
+        }
+    }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("text/x-lrc")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val text = viewModel.lrcText()
+        if (text.isNullOrBlank()) {
+            scope.launch { snackbar.showSnackbar(t.nothingToExport) }
+            return@rememberLauncherForActivityResult
+        }
+        scope.launch {
+            val ok = runCatching {
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(text.toByteArray(Charsets.UTF_8))
+                } != null
+            }.getOrDefault(false)
+            snackbar.showSnackbar(if (ok) t.lyricsExported else t.exportFailed)
+        }
+    }
 
     LaunchedEffect(nowPlaying?.time) {
         positionMs = ((nowPlaying?.time ?: 0.0) * 1000).toLong()
@@ -123,24 +171,134 @@ fun LyricsScreen(navController: NavController, modifier: Modifier = Modifier) {
         )
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = "歌词",
+                title = t.lyricsTitle,
                 onBack = { navController.popBackStack() },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            val text = viewModel.lrcText()
+                            if (text.isNullOrBlank()) {
+                                scope.launch { snackbar.showSnackbar(t.nothingToCopy) }
+                            } else {
+                                val clipboard = context.getSystemService(
+                                    android.content.ClipboardManager::class.java
+                                )
+                                clipboard?.setPrimaryClip(
+                                    android.content.ClipData.newPlainText("lyrics", text)
+                                )
+                                scope.launch { snackbar.showSnackbar(t.lyricsCopied) }
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Rounded.ContentCopy, contentDescription = t.copyLyrics)
+                    }
+                    IconButton(
+                        onClick = {
+                            if (viewModel.lrcText().isNullOrBlank()) {
+                                scope.launch { snackbar.showSnackbar(t.nothingToExport) }
+                            } else {
+                                exportLauncher.launch(viewModel.currentFileName())
+                            }
+                        }
+                    ) {
+                        Icon(Icons.Rounded.SaveAlt, contentDescription = t.exportLrc)
+                    }
                     IconButton(onClick = viewModel::refresh) {
-                        Icon(Icons.Rounded.Refresh, contentDescription = "重新匹配歌词")
+                        Icon(Icons.Rounded.Refresh, contentDescription = t.refreshLyrics)
                     }
                 }
             )
-            Text(
-                text = listOfNotNull(track?.title, track?.artist)
-                    .filter { it.isNotBlank() }
-                    .joinToString(" · ")
-                    .ifBlank { "暂无正在播放的曲目" },
-                modifier = Modifier.padding(horizontal = 24.dp),
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = listOfNotNull(track?.title, track?.artist)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" · ")
+                        .ifBlank { "暂无正在播放的曲目" },
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (savedPath != null) {
+                    Text(
+                        text = t.lyricsSaved,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            if (savedPath != null) {
+                Text(
+                    text = savedPath.orEmpty(),
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 2.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                Surface(
+                    onClick = { sourceMenu = true },
+                    shape = RoundedCornerShape(50),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(start = 10.dp, end = 6.dp, top = 5.dp, bottom = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.Language,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            text = "${t.lyricsSourceLabel}：${lyricsSourceName(lyricsSource, t)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Icon(
+                            Icons.Rounded.ArrowDropDown,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                DropdownMenu(expanded = sourceMenu, onDismissRequest = { sourceMenu = false }) {
+                    LyricsSource.entries.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(lyricsSourceName(option, t)) },
+                            trailingIcon = {
+                                if (option == lyricsSource) {
+                                    Icon(
+                                        Icons.Rounded.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            },
+                            onClick = {
+                                sourceMenu = false
+                                viewModel.selectSource(option)
+                                scope.launch {
+                                    snackbar.showSnackbar(
+                                        "${t.lyricsSourceLabel}：${lyricsSourceName(option, t)}"
+                                    )
+                                }
+                            }
+                        )
+                    }
+                }
+            }
             Spacer(Modifier.height(8.dp))
             when {
                 loading -> Box(
@@ -151,9 +309,9 @@ fun LyricsScreen(navController: NavController, modifier: Modifier = Modifier) {
                 }
                 error != null -> EmptyState(
                     icon = Icons.Rounded.Subtitles,
-                    title = "暂无歌词",
+                    title = t.noLyricsTitle,
                     body = error.orEmpty(),
-                    actionLabel = "重新匹配",
+                    actionLabel = t.rematch,
                     onAction = viewModel::refresh
                 )
                 lyricsData != null -> LyricsContent(
@@ -236,7 +394,8 @@ private fun LyricsContent(
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(
-                    text = "歌词来源：$source${if (lyrics.synced) " · 实时同步" else ""}",
+                    text = strings.lyricsFrom.format(source) +
+                        if (lyrics.synced) " · ${strings.syncedLabel}" else "",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -244,7 +403,7 @@ private fun LyricsContent(
         }
         if (!lyrics.synced) {
             Text(
-                text = "该歌词不含时间轴，仅支持滚动浏览",
+                text = strings.noTimelineHint,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(top = 44.dp),

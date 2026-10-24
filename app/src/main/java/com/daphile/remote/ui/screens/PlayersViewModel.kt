@@ -42,6 +42,8 @@ class PlayersViewModel(application: Application) : AndroidViewModel(application)
     suspend fun setPower(playerId: String, on: Boolean) =
         repository.setPlayerPower(playerId, on)
 
+    suspend fun playPause() = repository.playPause()
+
     suspend fun syncTo(playerId: String, masterId: String) =
         repository.syncPlayerTo(playerId, masterId)
 

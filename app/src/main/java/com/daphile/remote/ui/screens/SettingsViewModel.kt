@@ -30,6 +30,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     suspend fun setTheme(theme: String) = repository.setTheme(theme)
 
+    suspend fun setLanguage(language: com.daphile.remote.data.model.AppLanguage) =
+        repository.setLanguage(language)
+
     suspend fun setPollSeconds(seconds: Int) = repository.setPollSeconds(seconds)
 
     suspend fun setNotificationsEnabled(enabled: Boolean) =
@@ -49,4 +52,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     suspend fun rescan() = repository.rescan()
 
     suspend fun discoverServers(): List<DiscoveredServer> = repository.discoverServers()
+
+    fun lyricsLibraryPath(): String = repository.lyricsLibraryPath()
+
+    fun lyricsLibraryCount(): Int = repository.lyricsLibraryCount()
+
+    suspend fun clearLyricsLibrary(): Int = repository.clearLyricsLibrary()
 }

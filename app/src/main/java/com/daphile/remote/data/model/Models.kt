@@ -47,6 +47,7 @@ data class Player(
     val mode: String = "stop",
     val currentTitle: String = "",
     val currentArtist: String = "",
+    val canSetVolume: Boolean = true,
     val syncMaster: String? = null,
     val syncSlaves: List<String> = emptyList()
 ) {
@@ -170,8 +171,34 @@ data class AppSettings(
     val hostPowerEnabled: Boolean = true,
     val coverCacheMb: Int = 200,
     val onlineMetadataEnabled: Boolean = true,
-    val lockScreenControls: Boolean = true
+    val lockScreenControls: Boolean = true,
+    val lyricsSource: String = "auto",
+    val language: String = "auto"
 )
+
+/** 界面语言。auto 跟随系统，其余为固定语言。 */
+enum class AppLanguage(val key: String, val label: String) {
+    AUTO("auto", "跟随系统"),
+    ZH("zh", "简体中文"),
+    EN("en", "English");
+
+    companion object {
+        fun fromKey(key: String?): AppLanguage = entries.firstOrNull { it.key == key } ?: AUTO
+    }
+}
+
+/** 歌词匹配来源。自动模式优先网易云音乐，再回退 QQ 音乐与 LRCLIB。 */
+enum class LyricsSource(val key: String, val label: String) {
+    AUTO("auto", "自动（网易云优先）"),
+    NETEASE("netease", "网易云音乐"),
+    QQ("qq", "QQ 音乐"),
+    LRCLIB("lrclib", "LRCLIB");
+
+    companion object {
+        fun fromKey(key: String?): LyricsSource =
+            entries.firstOrNull { it.key == key } ?: AUTO
+    }
+}
 
 enum class HostPowerAction(val key: String, val title: String, val path: String) {
     Restart("restart", "重启主机", "/cgi-bin/Settings?ACTION=restart"),

@@ -228,11 +228,23 @@ class LmsClient {
         request(server, "", listOf(if (full) "wipecache" else "rescan"))
     }
 
-    suspend fun search(server: ServerConfig, query: String): SearchResults =
-        LmsParser.parseSearch(
+    suspend fun search(server: ServerConfig, query: String): SearchResults {
+        val meta = LmsParser.parseSearch(
             query,
             request(server, "", listOf("search", "0", "30", "term:$query"))
         )
+        // search 接口不返回音质字段，再用 titles + search 过滤取带完整元数据的曲目
+        val richSongs = runCatching {
+            LmsParser.parseTracks(
+                request(
+                    server,
+                    "",
+                    listOf("titles", "0", "30", "search:$query", "tags:${LmsParser.TRACK_TAGS}")
+                )
+            ).items
+        }.getOrNull()
+        return if (!richSongs.isNullOrEmpty()) meta.copy(songs = richSongs) else meta
+    }
 
     suspend fun favorites(server: ServerConfig, parentId: String? = null, playerId: String = ""): List<BrowserItem> {
         val command = mutableListOf("favorites", "items", "0", "200", "want_url:1")

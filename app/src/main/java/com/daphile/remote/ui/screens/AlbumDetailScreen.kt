@@ -52,7 +52,10 @@ import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.LoadingState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.common.QualityBadge
 import com.daphile.remote.ui.common.TrackRow
+import com.daphile.remote.ui.common.bestTrackQuality
+import com.daphile.remote.ui.i18n.strings
 import kotlinx.coroutines.launch
 
 @Composable
@@ -73,6 +76,7 @@ fun AlbumDetailScreen(
     var reloadKey by remember { mutableIntStateOf(0) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -154,15 +158,24 @@ fun AlbumDetailScreen(
                             )
                             val meta = listOf(
                                 info?.year.orEmpty(),
-                                "${tracks.size} 首曲目"
-                            ).filter { it.isNotBlank() }.joinToString(" · ")
-                            if (meta.isNotBlank()) {
+                                strings.tracksUnit.format(tracks.size)
+                            ).filter { it.isNotBlank() && it != "0" }.joinToString(" · ")
+                            val quality = bestTrackQuality(tracks)
+                            if (meta.isNotBlank() || quality != null) {
                                 Spacer(Modifier.height(4.dp))
-                                Text(
-                                    text = meta,
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (meta.isNotBlank()) {
+                                        Text(
+                                            text = meta,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                    if (quality != null) {
+                                        Spacer(Modifier.width(6.dp))
+                                        QualityBadge(quality)
+                                    }
+                                }
                             }
                             Spacer(Modifier.height(16.dp))
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -171,14 +184,14 @@ fun AlbumDetailScreen(
                                 }) {
                                     Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                                     Spacer(Modifier.width(6.dp))
-                                    Text("全部播放")
+                                    Text(strings.playAll)
                                 }
                                 OutlinedButton(onClick = {
-                                    runCommand("已加入队列") { viewModel.queueAlbum(albumId) }
+                                    runCommand(t.addToQueue) { viewModel.queueAlbum(albumId) }
                                 }) {
                                     Icon(Icons.Rounded.PlaylistAdd, contentDescription = null, modifier = Modifier.size(19.dp))
                                     Spacer(Modifier.width(6.dp))
-                                    Text("加入队列")
+                                    Text(t.addToQueue)
                                 }
                             }
                             TextButton(onClick = {

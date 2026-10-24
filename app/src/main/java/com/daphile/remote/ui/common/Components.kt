@@ -135,6 +135,108 @@ fun formatType(type: String): String = when (type.substringBefore("@").lowercase
     else -> type.substringBefore("@").uppercase(Locale.US)
 }
 
+/** 音质档位，priority 越大代表规格越高，用于专辑内取最佳音质。 */
+enum class QualityTier(val priority: Int) {
+    DSD(5),
+    HI_RES(4),
+    LOSSLESS(3),
+    HIGH(2),
+    STANDARD(1)
+}
+
+data class TrackQuality(val label: String, val tier: QualityTier)
+
+private val DSD_TYPES = setOf("dsd", "dsf", "dff")
+private val LOSSLESS_TYPES = setOf("flac", "flc", "wav", "wave", "aif", "aiff", "ape", "alac", "wv", "tta")
+private val LOSSY_TYPES = setOf("mp3", "aac", "m4a", "m4b", "ogg", "opus", "wma", "mpc", "aac")
+
+/**
+ * 由 LMS 返回的格式 / 采样率 / 位深 / 码率推导音质标签。
+ * 新扫描入库的曲目只要带有这些字段，就会自动获得标签。
+ */
+fun trackQuality(track: Track?): TrackQuality? {
+    if (track == null) return null
+    val rawType = track.type.trim().lowercase(Locale.US)
+    val type = rawType.substringBefore("@").trim().substringAfterLast('.').trim()
+    val rate = track.sampleRate.trim().toDoubleOrNull()
+    val bits = track.sampleSize.trim().toDoubleOrNull()
+    val bitrate = Regex("""(\d+)\s*kbps""", RegexOption.IGNORE_CASE)
+        .find(track.bitRate)
+        ?.groupValues?.getOrNull(1)
+        ?.toIntOrNull()
+        ?.takeIf { it > 0 }
+    val isDsd = type in DSD_TYPES || (rate != null && rate >= 2_000_000)
+    if (isDsd) {
+        val multiple = rate?.let { (it / 2_822_400.0).toInt() } ?: 0
+        val label = when (multiple) {
+            1 -> "DSD64"
+            2 -> "DSD128"
+            4 -> "DSD256"
+            8 -> "DSD512"
+            else -> "DSD"
+        }
+        return TrackQuality(label, QualityTier.DSD)
+    }
+    if (type.isBlank() && rate == null && bitrate == null) return null
+    val lossless = track.lossless || type in LOSSLESS_TYPES
+    if (lossless) {
+        val hiRes = (rate != null && rate >= 88_200) || (bits != null && bits > 16)
+        return if (hiRes) {
+            TrackQuality("Hi-Res", QualityTier.HI_RES)
+        } else {
+            TrackQuality("SQ", QualityTier.LOSSLESS)
+        }
+    }
+    if (bitrate != null) {
+        return if (bitrate >= 256) {
+            TrackQuality("HQ", QualityTier.HIGH)
+        } else {
+            TrackQuality("标准", QualityTier.STANDARD)
+        }
+    }
+    if (type in LOSSY_TYPES) return TrackQuality("标准", QualityTier.STANDARD)
+    return null
+}
+
+/** 一组曲目中的最佳音质，用于专辑详情页展示。 */
+fun bestTrackQuality(tracks: List<Track>): TrackQuality? =
+    tracks.mapNotNull { trackQuality(it) }.maxByOrNull { it.tier.priority }
+
+@Composable
+fun QualityBadge(track: Track?, modifier: Modifier = Modifier) {
+    val quality = trackQuality(track) ?: return
+    QualityBadge(quality = quality, modifier = modifier)
+}
+
+@Composable
+fun QualityBadge(quality: TrackQuality, modifier: Modifier = Modifier) {
+    val color = when (quality.tier) {
+        QualityTier.DSD -> Color(0xFFC08A20)
+        QualityTier.HI_RES -> Color(0xFFC08A20)
+        QualityTier.LOSSLESS -> Color(0xFF31A79B)
+        QualityTier.HIGH -> Color(0xFF4C8DF6)
+        QualityTier.STANDARD -> Color(0xFF8C939C)
+    }
+    Surface(
+        modifier = modifier,
+        color = color.copy(alpha = 0.16f),
+        shape = RoundedCornerShape(4.dp)
+    ) {
+        Text(
+            text = quality.label,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = 9.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.2.sp
+            ),
+            color = color,
+            maxLines = 1,
+            softWrap = false
+        )
+    }
+}
+
 @Composable
 fun CoverArt(
     url: String?,
@@ -353,14 +455,22 @@ fun TrackRow(
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = track.title.ifBlank { "未知曲目" },
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = track.title.ifBlank { "未知曲目" },
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val quality = trackQuality(track)
+                if (quality != null) {
+                    Spacer(Modifier.width(6.dp))
+                    QualityBadge(quality)
+                }
+            }
             val subtitle = listOf(displayArtist(track.artist), track.album)
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")

@@ -5,10 +5,16 @@
 
 package com.daphile.remote.ui.screens
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -29,13 +35,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDropDown
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.GraphicEq
+import androidx.compose.material.icons.rounded.IosShare
 import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Repeat
@@ -62,7 +71,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SnackbarHost
@@ -75,12 +83,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -107,12 +118,19 @@ import com.daphile.remote.data.model.Track
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
+import com.daphile.remote.ui.common.LyricSpotlight
+import com.daphile.remote.ui.common.PulseRing
+import com.daphile.remote.ui.common.QualityBadge
 import com.daphile.remote.ui.common.SpecChip
+import com.daphile.remote.ui.common.SpinningVinyl
+import com.daphile.remote.ui.common.StickFightScene
 import com.daphile.remote.ui.common.TrackRow
 import com.daphile.remote.ui.common.displayArtist
 import com.daphile.remote.ui.common.formatDuration
 import com.daphile.remote.ui.common.formatRemaining
 import com.daphile.remote.ui.common.trackSpecs
+import com.daphile.remote.ui.common.trackQuality
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -127,10 +145,14 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
     val connection by viewModel.connection.collectAsStateWithLifecycle()
     val sleepRemaining by viewModel.sleepRemaining.collectAsStateWithLifecycle()
     val coverOverride by viewModel.coverOverride.collectAsStateWithLifecycle()
+    val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
+    val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
+    val favorite by viewModel.favorite.collectAsStateWithLifecycle()
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val t = strings
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {}
@@ -172,9 +194,9 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
         Box(modifier.fillMaxSize()) {
             EmptyState(
                 icon = Icons.Rounded.WifiOff,
-                title = "还没有连接 Daphile",
-                body = "添加局域网中的 Daphile 主机，即可开始遥控播放",
-                actionLabel = "添加服务器",
+                title = t.noServerTitle,
+                body = t.noServerBody,
+                actionLabel = t.addServer,
                 onAction = { navController.navigate(Routes.SERVERS) }
             )
         }
@@ -191,12 +213,38 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
         }
     }
 
+    // 本地推进播放位置，让歌词与频谱不必等待下一次轮询
+    var positionMs by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(nowPlaying?.time) {
+        positionMs = ((nowPlaying?.time ?: 0.0) * 1000).toLong()
+    }
+    LaunchedEffect(nowPlaying?.isPlaying, nowPlaying?.track?.id) {
+        if (nowPlaying?.isPlaying == true) {
+            while (true) {
+                kotlinx.coroutines.delay(250)
+                positionMs += 250
+            }
+        }
+    }
+    val lyricsData = lyrics
+    val lyricIndex = remember(lyricsData, positionMs) {
+        if (lyricsData?.synced == true && lyricsData.lines.isNotEmpty()) {
+            lyricsData.lines.indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0)
+        } else {
+            0
+        }
+    }
+
     Box(modifier.fillMaxSize()) {
+        PulsingBackdrop(
+            accent = MaterialTheme.colorScheme.primary,
+            active = nowPlaying?.isPlaying == true
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
+                .padding(horizontal = 16.dp)
         ) {
             PlayerTopBar(
                 serverName = server?.name.orEmpty(),
@@ -211,7 +259,7 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                 onMatchCover = {
                     runCommand {
                         val matched = viewModel.matchCover(true)
-                        snackbar.showSnackbar(if (matched) "已匹配在线封面" else "未找到在线封面")
+                        snackbar.showSnackbar(if (matched) t.matchedCover else t.noOnlineCover)
                     }
                 },
                 onMenuClick = { showMenu = true },
@@ -239,73 +287,48 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                 }
             )
 
-            Spacer(Modifier.height(10.dp))
-            BoxWithConstraints(
+            Spacer(Modifier.height(8.dp))
+            NowPlayingHeader(track = track, nowPlaying = nowPlaying)
+
+            Spacer(Modifier.height(14.dp))
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.Center
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                val coverSize = minOf(maxWidth - 12.dp, 310.dp)
-                CoverArt(
-                    url = coverUrl,
-                    modifier = Modifier.size(coverSize),
-                    cornerRadius = 24.dp
+                val vinylSize = 196.dp
+                SpinningVinyl(
+                    coverUrl = coverUrl,
+                    playing = nowPlaying?.isPlaying == true,
+                    modifier = Modifier.size(vinylSize),
+                    accent = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.width(12.dp))
+                LyricSpotlight(
+                    lyrics = lyricsData,
+                    loading = lyricsLoading,
+                    currentIndex = lyricIndex,
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(vinylSize),
+                    onOpenLyrics = { navController.navigate(Routes.LYRICS) }
                 )
             }
 
-            Spacer(Modifier.height(22.dp))
-            Text(
-                text = track?.title?.ifBlank { "未知曲目" } ?: "暂无播放内容",
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 26.sp),
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(6.dp))
-            val subtitle = listOfNotNull(displayArtist(track?.artist), track?.album)
-                .filter { it.isNotBlank() }
-                .joinToString(" · ")
-            Text(
-                text = subtitle.ifBlank {
-                    if (nowPlaying?.power == false) "播放器已关闭" else "选择音乐开始播放"
+            Spacer(Modifier.height(8.dp))
+            StickFightScene(
+                progress = if ((nowPlaying?.duration ?: 0.0) > 0) {
+                    (positionMs / 1000f / (nowPlaying?.duration ?: 1.0)).toFloat()
+                } else {
+                    0f
                 },
-                modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
+                playing = nowPlaying?.isPlaying == true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
             )
 
-            val specs = trackSpecs(track)
-            if (specs.isNotEmpty()) {
-                Spacer(Modifier.height(12.dp))
-                FlowRow(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { navController.navigate(Routes.AUDIO_OUTPUT) },
-                    horizontalArrangement = Arrangement.Center,
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    specs.forEach { spec ->
-                        SpecChip(spec)
-                        Spacer(Modifier.width(6.dp))
-                    }
-                }
-                Text(
-                    text = "点击音频规格查看实时输出",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                    textAlign = TextAlign.Center
-                )
-            }
-
+            Spacer(Modifier.height(4.dp))
             if (track != null) {
-                Spacer(Modifier.height(18.dp))
                 SeekSection(
                     nowPlaying = nowPlaying,
                     track = track,
@@ -313,17 +336,63 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(4.dp))
+            QuickActionsRow(
+                shuffleOn = (nowPlaying?.shuffle ?: 0) > 0,
+                enabled = track != null,
+                onShuffle = {
+                    val next = !((nowPlaying?.shuffle ?: 0) > 0)
+                    runCommand(if (next) t.shuffleOn else t.shuffleOff) {
+                        viewModel.setShuffle(next)
+                    }
+                },
+                onFavorite = {
+                    runCommand(if (favorite) t.favorited else t.addedToFavorites) {
+                        if (!favorite) viewModel.addCurrentFavorite()
+                    }
+                },
+                favorite = favorite,
+                onShare = {
+                    val title = track?.title.orEmpty()
+                    val artist = displayArtist(track?.artist)
+                    val shareText = listOf(title, artist)
+                        .filter { it.isNotBlank() }
+                        .joinToString(" - ")
+                    if (shareText.isBlank()) {
+                        scope.launch { snackbar.showSnackbar(t.nothingToShare) }
+                    } else {
+                        val intent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(android.content.Intent.EXTRA_TEXT, shareText)
+                        }
+                        runCatching {
+                            context.startActivity(
+                                android.content.Intent.createChooser(intent, t.shareTitle)
+                            )
+                        }
+                        scope.launch { snackbar.showSnackbar(t.shareOpened) }
+                    }
+                },
+                onSleep = {
+                    scope.launch { snackbar.showSnackbar(t.sleepStarted) }
+                    showSleepDialog = true
+                },
+                onAudioInfo = { navController.navigate(Routes.AUDIO_OUTPUT) }
+            )
+
+            Spacer(Modifier.height(10.dp))
             PlayerControls(
                 nowPlaying = nowPlaying,
                 enabled = track != null,
-                onPrevious = { runCommand { viewModel.previous() } },
-                onNext = { runCommand { viewModel.next() } },
-                onPlayPause = { runCommand { viewModel.playPause() } },
-                onShuffle = {
-                    runCommand {
-                        viewModel.setShuffle(!((nowPlaying?.shuffle ?: 0) > 0))
-                    }
+                onPrevious = {
+                    runCommand(t.prevTrack) { viewModel.previous() }
+                },
+                onNext = {
+                    runCommand(t.nextTrack) { viewModel.next() }
+                },
+                onPlayPause = {
+                    val playing = nowPlaying?.isPlaying == true
+                    runCommand(if (playing) t.pausedToast else t.playingToast) { viewModel.playPause() }
                 },
                 onRepeat = {
                     val next = when (nowPlaying?.repeat ?: 0) {
@@ -331,16 +400,26 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                         2 -> 1
                         else -> 0
                     }
-                    runCommand { viewModel.setRepeat(next) }
+                    val label = when (next) {
+                        2 -> t.listLoop
+                        1 -> t.singleLoop
+                        else -> t.repeatOff
+                    }
+                    runCommand(label) { viewModel.setRepeat(next) }
+                },
+                muted = nowPlaying?.muted == true,
+                muteEnabled = nowPlaying?.canSetVolume != false,
+                onToggleMute = {
+                    val muted = nowPlaying?.muted == true
+                    runCommand(if (muted) t.unmute else t.mute) { viewModel.toggleMute() }
                 }
             )
 
-            Spacer(Modifier.height(18.dp))
+            Spacer(Modifier.height(8.dp))
             VolumeSection(
                 nowPlaying = nowPlaying,
                 onVolumeChange = { viewModel.onVolumeChange(it) },
-                onVolumeFinished = { viewModel.flushVolume() },
-                onToggleMute = { runCommand { viewModel.toggleMute() } }
+                onVolumeFinished = { viewModel.flushVolume() }
             )
 
             if (sleepRemaining != null) {
@@ -357,51 +436,28 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                     )
                     Spacer(Modifier.width(6.dp))
                     Text(
-                        text = "睡眠定时剩余 ${formatRemaining(sleepRemaining ?: 0)}",
+                        text = t.sleepRemaining.format(formatRemaining(sleepRemaining ?: 0)),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
                     )
-                    TextButton(onClick = { runCommand { viewModel.cancelSleepTimer() } }) {
-                        Text("取消")
+                    TextButton(onClick = { runCommand(t.cancelTimer) { viewModel.cancelSleepTimer() } }) {
+                        Text(t.cancel)
                     }
-                }
-            }
-
-            Spacer(Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                OutlinedButton(
-                    onClick = { navController.navigate(Routes.LYRICS) },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Rounded.Subtitles, contentDescription = null, modifier = Modifier.size(19.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("歌词")
-                }
-                OutlinedButton(
-                    onClick = { showQueue = true },
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Icon(Icons.Rounded.QueueMusic, contentDescription = null, modifier = Modifier.size(19.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("队列 ${nowPlaying?.trackCount ?: 0}")
                 }
             }
 
             if (players.isEmpty() && connection == ConnectionState.Connected) {
                 EmptyState(
                     icon = Icons.Rounded.Speaker,
-                    title = "服务器暂无可用播放器",
-                    body = "请在 Daphile 音频设置中启用播放器，或检查 USB DAC 连接",
-                    actionLabel = "查看播放器",
+                    title = t.noPlayersTitle,
+                    body = t.noPlayersBody,
+                    actionLabel = t.viewPlayers,
                     onAction = { navController.navigate(Routes.PLAYERS) }
                 )
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(16.dp))
         }
 
         SnackbarHost(
@@ -464,16 +520,16 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
     if (showClearDialog) {
         AlertDialog(
             onDismissRequest = { showClearDialog = false },
-            title = { Text("清空播放队列") },
-            text = { Text("清空后当前播放会停止，确定要继续吗？") },
+            title = { Text(t.clearQueueTitle) },
+            text = { Text(t.clearQueueBody) },
             confirmButton = {
                 TextButton(onClick = {
                     showClearDialog = false
                     runCommand { viewModel.clearQueue() }
-                }) { Text("清空") }
+                }) { Text(t.clear) }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDialog = false }) { Text("取消") }
+                TextButton(onClick = { showClearDialog = false }) { Text(t.cancel) }
             }
         )
     }
@@ -534,6 +590,7 @@ private fun PlayerTopBar(
     onStop: () -> Unit
 ) {
     var playerMenu by remember { mutableStateOf(false) }
+    val t = strings
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -561,7 +618,7 @@ private fun PlayerTopBar(
                     )
                     Spacer(Modifier.width(4.dp))
                     Text(
-                        text = currentPlayer?.name ?: "选择播放器",
+                        text = currentPlayer?.name ?: t.choosePlayer,
                         style = MaterialTheme.typography.titleSmall,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -604,32 +661,31 @@ private fun PlayerTopBar(
         IconButton(onClick = onOpenQueue) {
             Icon(
                 Icons.Rounded.QueueMusic,
-                contentDescription = "播放队列",
+                contentDescription = t.queue,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        IconButton(onClick = onLyrics) {
+            Icon(
+                Icons.Rounded.Subtitles,
+                contentDescription = t.lyrics,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         IconButton(onClick = onTogglePower) {
             Icon(
                 Icons.Rounded.PowerSettingsNew,
-                contentDescription = "电源控制",
+                contentDescription = t.power,
                 tint = if (powerOn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Box {
             IconButton(onClick = onMenuClick) {
-                Icon(Icons.Rounded.MoreVert, contentDescription = "更多")
+                Icon(Icons.Rounded.MoreVert, contentDescription = t.more)
             }
             DropdownMenu(expanded = menuExpanded, onDismissRequest = onDismissMenu) {
                 DropdownMenuItem(
-                    text = { Text("歌词") },
-                    leadingIcon = { Icon(Icons.Rounded.Subtitles, contentDescription = null) },
-                    onClick = {
-                        onDismissMenu()
-                        onLyrics()
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("音频输出信息") },
+                    text = { Text(t.audioOutput) },
                     leadingIcon = { Icon(Icons.Rounded.GraphicEq, contentDescription = null) },
                     onClick = {
                         onDismissMenu()
@@ -637,7 +693,7 @@ private fun PlayerTopBar(
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("在线匹配封面") },
+                    text = { Text(t.matchCover) },
                     leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
                     onClick = {
                         onDismissMenu()
@@ -645,27 +701,27 @@ private fun PlayerTopBar(
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("睡眠定时") },
+                    text = { Text(t.sleepTimer) },
                     leadingIcon = { Icon(Icons.Rounded.Timer, contentDescription = null) },
                     onClick = onSleep
                 )
                 DropdownMenuItem(
-                    text = { Text("收藏当前曲目") },
+                    text = { Text(t.favoriteTrack) },
                     leadingIcon = { Icon(Icons.Rounded.FavoriteBorder, contentDescription = null) },
                     onClick = onFavorite
                 )
                 DropdownMenuItem(
-                    text = { Text("保存队列为播放列表") },
+                    text = { Text(t.saveQueue) },
                     leadingIcon = { Icon(Icons.Rounded.Save, contentDescription = null) },
                     onClick = onSaveQueue
                 )
                 DropdownMenuItem(
-                    text = { Text("停止播放") },
+                    text = { Text(t.stop) },
                     leadingIcon = { Icon(Icons.Rounded.Stop, contentDescription = null) },
                     onClick = onStop
                 )
                 DropdownMenuItem(
-                    text = { Text("清空队列") },
+                    text = { Text(t.clearQueue) },
                     leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
                     onClick = onClearQueue
                 )
@@ -752,47 +808,50 @@ private fun PlayerControls(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onPlayPause: () -> Unit,
-    onShuffle: () -> Unit,
-    onRepeat: () -> Unit
+    onRepeat: () -> Unit,
+    muted: Boolean,
+    muteEnabled: Boolean,
+    onToggleMute: () -> Unit
 ) {
     val activeTint = MaterialTheme.colorScheme.primary
     val inactiveTint = MaterialTheme.colorScheme.onSurfaceVariant
+    val t = strings
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onShuffle, enabled = enabled) {
-            Icon(
-                Icons.Rounded.Shuffle,
-                contentDescription = "随机播放",
-                tint = if ((nowPlaying?.shuffle ?: 0) > 0) activeTint else inactiveTint
-            )
-        }
-        Spacer(Modifier.width(10.dp))
         IconButton(onClick = onPrevious, enabled = enabled, modifier = Modifier.size(56.dp)) {
             Icon(
                 Icons.Rounded.SkipPrevious,
-                contentDescription = "上一首",
+                contentDescription = t.prevTrack,
                 modifier = Modifier.size(32.dp)
             )
         }
-        Spacer(Modifier.width(8.dp))
-        FilledIconButton(
-            onClick = onPlayPause,
-            modifier = Modifier.size(72.dp)
-        ) {
-            Icon(
-                imageVector = if (nowPlaying?.isPlaying == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
-                contentDescription = if (nowPlaying?.isPlaying == true) "暂停" else "播放",
-                modifier = Modifier.size(40.dp)
-            )
+        Spacer(Modifier.width(18.dp))
+        Box(contentAlignment = Alignment.Center) {
+            if (nowPlaying?.isPlaying == true) {
+                PulseRing(
+                    modifier = Modifier.size(86.dp),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            FilledIconButton(
+                onClick = onPlayPause,
+                modifier = Modifier.size(72.dp)
+            ) {
+                Icon(
+                    imageVector = if (nowPlaying?.isPlaying == true) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                    contentDescription = if (nowPlaying?.isPlaying == true) t.pause else t.play,
+                    modifier = Modifier.size(40.dp)
+                )
+            }
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(18.dp))
         IconButton(onClick = onNext, enabled = enabled, modifier = Modifier.size(56.dp)) {
             Icon(
                 Icons.Rounded.SkipNext,
-                contentDescription = "下一首",
+                contentDescription = t.nextTrack,
                 modifier = Modifier.size(32.dp)
             )
         }
@@ -800,47 +859,217 @@ private fun PlayerControls(
         IconButton(onClick = onRepeat, enabled = enabled) {
             Icon(
                 imageVector = if ((nowPlaying?.repeat ?: 0) == 1) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
-                contentDescription = "循环模式",
+                contentDescription = t.repeatMode,
                 tint = if ((nowPlaying?.repeat ?: 0) > 0) activeTint else inactiveTint
             )
         }
+        IconButton(onClick = onToggleMute, enabled = muteEnabled) {
+            Icon(
+                imageVector = if (muted) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
+                contentDescription = if (muted) t.unmute else t.mute,
+                tint = when {
+                    !muteEnabled -> inactiveTint.copy(alpha = 0.35f)
+                    muted -> activeTint
+                    else -> inactiveTint
+                }
+            )
+        }
     }
+}
+
+/**
+ * 顶部曲目信息：曲名、艺人、专辑与规格标签，左对齐，贴近参考样式。
+ */
+@Composable
+private fun NowPlayingHeader(track: Track?, nowPlaying: NowPlaying?) {
+    val t = strings
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = track?.title?.ifBlank { t.unknownTrack } ?: t.noContent,
+                modifier = Modifier.weight(1f, fill = false),
+                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 24.sp),
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            val quality = nowPlaying?.track?.let { trackQuality(it) }
+            if (quality != null) {
+                Spacer(Modifier.width(8.dp))
+                QualityBadge(quality)
+            }
+        }
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = listOfNotNull(displayArtist(track?.artist), track?.album)
+                .filter { it.isNotBlank() }
+                .joinToString(" · ")
+                .ifBlank {
+                    if (nowPlaying?.power == false) t.playerOff else t.selectMusic
+                },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        val specs = trackSpecs(track)
+        if (specs.isNotEmpty()) {
+            Spacer(Modifier.height(8.dp))
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { }
+                    .padding(vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                specs.forEach { spec -> SpecChip(spec) }
+            }
+        }
+    }
+}
+
+/**
+ * 参考播放器的一排快捷操作：随机、收藏、分享、睡眠定时、音质信息。
+ * 歌词与队列已在页面上有独立入口，这里不再重复。
+ */
+@Composable
+private fun QuickActionsRow(
+    shuffleOn: Boolean,
+    enabled: Boolean,
+    onShuffle: () -> Unit,
+    onFavorite: () -> Unit,
+    favorite: Boolean,
+    onShare: () -> Unit,
+    onSleep: () -> Unit,
+    onAudioInfo: () -> Unit
+) {
+    val active = MaterialTheme.colorScheme.primary
+    val idle = MaterialTheme.colorScheme.onSurfaceVariant
+    val t = strings
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onShuffle, enabled = enabled) {
+            Icon(
+                Icons.Rounded.Shuffle,
+                contentDescription = if (shuffleOn) t.shuffleOff else t.shuffleOn,
+                tint = if (shuffleOn) active else idle
+            )
+        }
+        IconButton(onClick = onFavorite, enabled = enabled) {
+            Icon(
+                imageVector = if (favorite) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                contentDescription = if (favorite) t.favorited else t.favorite,
+                tint = if (favorite) Color(0xFFE85D75) else idle
+            )
+        }
+        IconButton(onClick = onShare, enabled = enabled) {
+            Icon(
+                Icons.Rounded.IosShare,
+                contentDescription = t.share,
+                tint = idle
+            )
+        }
+        IconButton(onClick = onSleep) {
+            Icon(
+                Icons.Rounded.Timer,
+                contentDescription = t.sleepTimer,
+                tint = idle
+            )
+        }
+        IconButton(onClick = onAudioInfo, enabled = enabled) {
+            Icon(
+                Icons.Rounded.GraphicEq,
+                contentDescription = t.audioInfo,
+                tint = idle
+            )
+        }
+    }
+}
+
+/**
+ * 背景呼吸光：播放时轻微起伏，暂停时静止，营造沉浸感。
+ */
+@Composable
+private fun PulsingBackdrop(accent: Color, active: Boolean) {
+    val transition = rememberInfiniteTransition(label = "backdrop")
+    val glow by transition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 5200,
+                easing = FastOutSlowInEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "backdropGlow"
+    )
+    val intensity = if (active) 0.10f + glow * 0.10f else 0.06f
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        accent.copy(alpha = intensity),
+                        MaterialTheme.colorScheme.background.copy(alpha = 0.10f),
+                        MaterialTheme.colorScheme.background
+                    )
+                )
+            )
+    )
 }
 
 @Composable
 private fun VolumeSection(
     nowPlaying: NowPlaying?,
     onVolumeChange: (Int) -> Unit,
-    onVolumeFinished: () -> Unit,
-    onToggleMute: () -> Unit
+    onVolumeFinished: () -> Unit
 ) {
     var adjusting by remember { mutableStateOf(false) }
     var volumeValue by remember { mutableFloatStateOf((nowPlaying?.volume ?: 0).toFloat()) }
     LaunchedEffect(nowPlaying?.volume) {
         if (!adjusting) volumeValue = (nowPlaying?.volume ?: 0).toFloat()
     }
+    val canSetVolume = nowPlaying?.canSetVolume != false
+    val t = strings
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        IconButton(onClick = onToggleMute) {
-            Icon(
-                imageVector = if (nowPlaying?.muted == true) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
-                contentDescription = if (nowPlaying?.muted == true) "取消静音" else "静音",
-                tint = if (nowPlaying?.muted == true) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
-        if (nowPlaying?.canSetVolume == false) {
-            Text(
-                text = "固定音量",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.weight(1f)
-            )
+        Icon(
+            imageVector = when {
+                !canSetVolume -> Icons.Rounded.VolumeOff
+                nowPlaying?.muted == true -> Icons.Rounded.VolumeOff
+                else -> Icons.Rounded.VolumeUp
+            },
+            contentDescription = null,
+            modifier = Modifier.padding(start = 12.dp, end = 10.dp).size(20.dp),
+            tint = if (canSetVolume) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
+            }
+        )
+        if (!canSetVolume) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = t.fixedVolume,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = t.volumeDisabledHint,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                )
+            }
         } else {
             Slider(
                 value = if (adjusting) volumeValue else (nowPlaying?.volume ?: 0).toFloat(),
@@ -878,6 +1107,7 @@ private fun QueueSheetContent(
     onGoLibrary: () -> Unit
 ) {
     val queue = nowPlaying?.queue.orEmpty()
+    val t = strings
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -887,29 +1117,29 @@ private fun QueueSheetContent(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "播放队列",
+                    text = t.queue,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "${queue.size} 首曲目",
+                    text = t.queueTracks.format(queue.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             IconButton(onClick = onGoLibrary) {
-                Icon(Icons.Rounded.LibraryMusic, contentDescription = "去音乐库")
+                Icon(Icons.Rounded.LibraryMusic, contentDescription = t.goLibrary)
             }
             IconButton(onClick = onClear, enabled = queue.isNotEmpty()) {
-                Icon(Icons.Rounded.Delete, contentDescription = "清空队列")
+                Icon(Icons.Rounded.Delete, contentDescription = t.clearQueue)
             }
         }
         if (queue.isEmpty()) {
             EmptyState(
                 icon = Icons.Rounded.MusicNote,
-                title = "队列为空",
-                body = "去音乐库挑一张专辑开始播放",
-                actionLabel = "去音乐库",
+                title = t.queueEmptyTitle,
+                body = t.queueEmptyBody,
+                actionLabel = t.goLibrary,
                 onAction = onGoLibrary
             )
         } else {
@@ -948,21 +1178,22 @@ private fun SleepTimerDialog(
 ) {
     var minutes by remember { mutableIntStateOf(30) }
     var action by remember { mutableStateOf(SleepAction.Stop) }
+    val t = strings
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("睡眠定时") },
+        title = { Text(t.sleepTimer) },
         text = {
             Column {
                 if (activeRemaining != null) {
                     Text(
-                        text = "当前剩余 ${formatRemaining(activeRemaining)}",
+                        text = t.sleepRemaining.format(formatRemaining(activeRemaining)),
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelLarge
                     )
                     Spacer(Modifier.height(12.dp))
                 }
                 Text(
-                    text = "倒计时时长",
+                    text = t.sleepMinutes.format(minutes),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -975,22 +1206,22 @@ private fun SleepTimerDialog(
                         FilterChip(
                             selected = minutes == value,
                             onClick = { minutes = value },
-                            label = { Text("$value 分钟") }
+                            label = { Text(t.sleepMinutes.format(value)) }
                         )
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "到点后",
+                    text = t.sleepAfter,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(6.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     listOf(
-                        SleepAction.Stop to "停止播放",
-                        SleepAction.Pause to "暂停播放",
-                        SleepAction.PowerOff to "关闭播放器"
+                        SleepAction.Stop to t.sleepStop,
+                        SleepAction.Pause to t.sleepPause,
+                        SleepAction.PowerOff to t.sleepPowerOff
                     ).forEach { (value, label) ->
                         FilterChip(
                             selected = action == value,
@@ -1003,15 +1234,15 @@ private fun SleepTimerDialog(
         },
         confirmButton = {
             Button(onClick = { onStart(minutes, action) }) {
-                Text(if (activeRemaining != null) "重新开始" else "开始")
+                Text(if (activeRemaining != null) t.restart else t.start)
             }
         },
         dismissButton = {
             Row {
                 if (activeRemaining != null) {
-                    TextButton(onClick = onCancelTimer) { Text("取消定时") }
+                    TextButton(onClick = onCancelTimer) { Text(t.cancelTimer) }
                 }
-                TextButton(onClick = onDismiss) { Text("关闭") }
+                TextButton(onClick = onDismiss) { Text(t.close) }
             }
         }
     )
@@ -1020,14 +1251,15 @@ private fun SleepTimerDialog(
 @Composable
 private fun SaveQueueDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
+    val t = strings
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("保存队列") },
+        title = { Text(t.saveQueue) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("播放列表名称") },
+                label = { Text(t.playlistName) },
                 singleLine = true
             )
         },
@@ -1035,10 +1267,10 @@ private fun SaveQueueDialog(onDismiss: () -> Unit, onSave: (String) -> Unit) {
             TextButton(
                 onClick = { onSave(name.trim()) },
                 enabled = name.isNotBlank()
-            ) { Text("保存") }
+            ) { Text(t.save) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(t.cancel) }
         }
     )
 }

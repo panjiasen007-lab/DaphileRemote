@@ -40,6 +40,8 @@ class SettingsStore(
         val coverCacheMb = intPreferencesKey("cover_cache_mb")
         val onlineMetadata = booleanPreferencesKey("online_metadata_enabled")
         val lockScreenControls = booleanPreferencesKey("lock_screen_controls")
+        val lyricsSource = stringPreferencesKey("lyrics_source")
+        val language = stringPreferencesKey("app_language")
         fun playerFor(serverId: String) = stringPreferencesKey("player_$serverId")
     }
 
@@ -66,7 +68,9 @@ class SettingsStore(
             hostPowerEnabled = preferences[Keys.hostPower] ?: true,
             coverCacheMb = preferences[Keys.coverCacheMb] ?: 200,
             onlineMetadataEnabled = preferences[Keys.onlineMetadata] ?: true,
-            lockScreenControls = preferences[Keys.lockScreenControls] ?: true
+            lockScreenControls = preferences[Keys.lockScreenControls] ?: true,
+            lyricsSource = preferences[Keys.lyricsSource] ?: "auto",
+            language = preferences[Keys.language] ?: "auto"
         )
     }
 
@@ -142,6 +146,14 @@ class SettingsStore(
 
     suspend fun setLockScreenControls(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.lockScreenControls] = enabled }
+    }
+
+    suspend fun setLyricsSource(sourceKey: String) {
+        context.settingsDataStore.edit { it[Keys.lyricsSource] = sourceKey }
+    }
+
+    suspend fun setLanguage(languageKey: String) {
+        context.settingsDataStore.edit { it[Keys.language] = languageKey }
     }
 
     private fun decodeServers(raw: String?): List<ServerConfig> {

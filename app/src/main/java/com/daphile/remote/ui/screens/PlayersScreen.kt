@@ -18,6 +18,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.OpenInFull
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PowerSettingsNew
 import androidx.compose.material.icons.rounded.Speaker
 import androidx.compose.material.icons.rounded.Sync
@@ -55,6 +58,8 @@ import com.daphile.remote.data.model.Player
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
+import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
 @Composable
@@ -62,6 +67,7 @@ fun PlayersScreen(navController: NavController, modifier: Modifier = Modifier) {
     val viewModel: PlayersViewModel = viewModel()
     val players by viewModel.players.collectAsStateWithLifecycle()
     val currentPlayerId by viewModel.currentPlayerId.collectAsStateWithLifecycle()
+    val nowPlaying by viewModel.nowPlaying.collectAsStateWithLifecycle()
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -79,12 +85,19 @@ fun PlayersScreen(navController: NavController, modifier: Modifier = Modifier) {
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PageHeader(title = "播放器")
+            PageHeader(
+                title = strings.playersTitle,
+                actions = {
+                    IconButton(onClick = { navController.navigate(Routes.NOW) { launchSingleTop = true } }) {
+                        Icon(Icons.Rounded.OpenInFull, contentDescription = strings.openNowPlaying)
+                    }
+                }
+            )
             if (players.isEmpty()) {
                 EmptyState(
                     icon = Icons.Rounded.Speaker,
-                    title = "没有可用播放器",
-                    body = "请在 Daphile 音频设置中启用播放器，或检查 USB DAC 连接"
+                    title = strings.noPlayersTitle,
+                    body = strings.noPlayersBody
                 )
             } else {
                 LazyColumn(
@@ -93,16 +106,31 @@ fun PlayersScreen(navController: NavController, modifier: Modifier = Modifier) {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(items = players, key = { it.id }) { player ->
+                        val isCurrent = player.id == currentPlayerId
                         PlayerCard(
                             player = player,
                             players = players,
-                            isSelected = player.id == currentPlayerId,
+                            isSelected = isCurrent,
+                            isPlaying = isCurrent && nowPlaying?.isPlaying == true,
+                            currentTrack = if (isCurrent) nowPlaying?.track?.title.orEmpty() else "",
                             onSelect = {
                                 viewModel.selectPlayer(player.id)
                                 scope.launch { snackbar.showSnackbar("已切换到 ${player.name}") }
                             },
                             onPowerToggle = {
                                 runCommand { viewModel.setPower(player.id, !player.power) }
+                            },
+                            onPlayPause = {
+                                if (!isCurrent) {
+                                    viewModel.selectPlayer(player.id)
+                                }
+                                runCommand { viewModel.playPause() }
+                            },
+                            onOpenNowPlaying = {
+                                if (!isCurrent) {
+                                    viewModel.selectPlayer(player.id)
+                                }
+                                navController.navigate(Routes.NOW) { launchSingleTop = true }
                             },
                             onSyncTo = { masterId ->
                                 runCommand("同步设置已生效") { viewModel.syncTo(player.id, masterId) }
@@ -131,8 +159,12 @@ private fun PlayerCard(
     player: Player,
     players: List<Player>,
     isSelected: Boolean,
+    isPlaying: Boolean,
+    currentTrack: String,
     onSelect: () -> Unit,
     onPowerToggle: () -> Unit,
+    onPlayPause: () -> Unit,
+    onOpenNowPlaying: () -> Unit,
     onSyncTo: (String) -> Unit,
     onUnsync: () -> Unit,
     onVolumeChange: (Int) -> Unit,
@@ -173,16 +205,22 @@ private fun PlayerCard(
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "当前",
+                                    text = if (isPlaying) strings.playingBadge else strings.currentBadge,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = MaterialTheme.colorScheme.primary,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
                     }
                     Text(
-                        text = listOf(player.model, if (player.connected) "在线" else "离线")
+                        text = listOf(
+                            player.model,
+                            currentTrack.ifBlank { player.currentTitle },
+                            if (player.connected) strings.online else strings.offline
+                        )
                             .filter { it.isNotBlank() }
                             .joinToString(" · "),
                         style = MaterialTheme.typography.labelSmall,
@@ -190,8 +228,28 @@ private fun PlayerCard(
                             MaterialTheme.colorScheme.onSurfaceVariant
                         } else {
                             MaterialTheme.colorScheme.error
-                        }
+                        },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                }
+                if (isSelected && player.connected) {
+                    IconButton(onClick = onPlayPause) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            contentDescription = if (isPlaying) strings.pause else strings.play,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
+                if (isSelected) {
+                    IconButton(onClick = onOpenNowPlaying) {
+                        Icon(
+                            Icons.Rounded.OpenInFull,
+                            contentDescription = strings.openNowPlaying,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 IconButton(onClick = onPowerToggle, enabled = player.connected) {
                     Icon(
@@ -226,41 +284,62 @@ private fun PlayerCard(
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = if (player.muted) Icons.Rounded.VolumeOff else Icons.Rounded.VolumeUp,
+                    imageVector = if (player.muted || !player.canSetVolume) {
+                        Icons.Rounded.VolumeOff
+                    } else {
+                        Icons.Rounded.VolumeUp
+                    },
                     contentDescription = null,
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(
+                        alpha = if (player.canSetVolume) 1f else 0.45f
+                    )
                 )
                 Spacer(Modifier.width(8.dp))
-                Slider(
-                    value = if (adjustingVolume) volumeValue else player.volume.toFloat(),
-                    onValueChange = {
-                        adjustingVolume = true
-                        volumeValue = it
-                        onVolumeChange(it.toInt().coerceIn(0, 100))
-                    },
-                    onValueChangeFinished = {
-                        adjustingVolume = false
-                        onVolumeFinished()
-                    },
-                    valueRange = 0f..100f,
-                    enabled = player.connected,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = if (adjustingVolume) volumeValue.toInt().toString() else player.volume.toString(),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.width(28.dp)
-                )
+                if (!player.canSetVolume) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = strings.fixedVolume,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = strings.volumeDisabledHint,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                        )
+                    }
+                } else {
+                    Slider(
+                        value = if (adjustingVolume) volumeValue else player.volume.toFloat(),
+                        onValueChange = {
+                            adjustingVolume = true
+                            volumeValue = it
+                            onVolumeChange(it.toInt().coerceIn(0, 100))
+                        },
+                        onValueChangeFinished = {
+                            adjustingVolume = false
+                            onVolumeFinished()
+                        },
+                        valueRange = 0f..100f,
+                        enabled = player.connected,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = if (adjustingVolume) volumeValue.toInt().toString() else player.volume.toString(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(28.dp)
+                    )
+                }
             }
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 when {
                     master != null -> {
                         Text(
-                            text = "已同步到 ${master.name}",
+                            text = strings.syncedTo.format(master.name),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f)
@@ -268,7 +347,7 @@ private fun PlayerCard(
                         TextButton(onClick = onUnsync, enabled = player.connected) {
                             Icon(Icons.Rounded.Close, contentDescription = null, modifier = Modifier.size(15.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("取消同步")
+                            Text(strings.unsync)
                         }
                     }
                     player.syncSlaves.isNotEmpty() -> {
@@ -298,7 +377,7 @@ private fun PlayerCard(
                         TextButton(onClick = { syncMenu = true }, enabled = player.connected) {
                             Icon(Icons.Rounded.Sync, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(Modifier.width(4.dp))
-                            Text("同步到…")
+                            Text(strings.syncTo)
                         }
                         DropdownMenu(expanded = syncMenu, onDismissRequest = { syncMenu = false }) {
                             others.forEach { target ->

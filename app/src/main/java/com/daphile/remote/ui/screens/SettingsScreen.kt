@@ -5,6 +5,7 @@ package com.daphile.remote.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Info
+import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.MusicNote
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.Palette
@@ -43,12 +46,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,10 +64,15 @@ import androidx.navigation.NavController
 import coil.imageLoader
 import com.daphile.remote.BuildConfig
 import com.daphile.remote.data.model.ConnectionState
+import com.daphile.remote.data.model.AppLanguage
 import com.daphile.remote.data.model.HostPowerAction
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.languageDisplayName
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
+import com.daphile.remote.ui.theme.AppTheme
+import com.daphile.remote.ui.theme.colorSchemeFor
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -78,11 +88,16 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
 
     var showThemeDialog by remember { mutableStateOf(false) }
     var showPollDialog by remember { mutableStateOf(false) }
     var showRescanDialog by remember { mutableStateOf(false) }
+    var showClearLyricsDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
     var powerAction by remember { mutableStateOf<HostPowerAction?>(null) }
+    var lyricsCount by remember { mutableIntStateOf(viewModel.lyricsLibraryCount()) }
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -101,7 +116,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            PageHeader(title = "设置")
+            PageHeader(title = t.settingsTitle)
 
             Column(modifier = Modifier.padding(horizontal = 16.dp)) {
                 Surface(
@@ -156,12 +171,12 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                         Spacer(Modifier.height(14.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             SettingActionButton(
-                                text = "服务器管理",
+                                text = t.serverManage,
                                 icon = Icons.Rounded.Wifi,
                                 modifier = Modifier.weight(1f)
                             ) { navController.navigate(Routes.SERVERS) }
                             SettingActionButton(
-                                text = "Daphile 管理",
+                                text = t.daphileManage,
                                 icon = Icons.Rounded.OpenInNew,
                                 enabled = server != null,
                                 modifier = Modifier.weight(1f)
@@ -182,7 +197,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             SettingActionButton(
-                                text = "LMS 网页端",
+                                text = t.lmsWeb,
                                 icon = Icons.Rounded.MusicNote,
                                 enabled = server != null,
                                 modifier = Modifier.weight(1f)
@@ -200,7 +215,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                                 }
                             }
                             SettingActionButton(
-                                text = "系统信息",
+                                text = t.systemInfo,
                                 icon = Icons.Rounded.Info,
                                 modifier = Modifier.weight(1f)
                             ) { navController.navigate(Routes.SYSTEM_INFO) }
@@ -209,16 +224,16 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 }
             }
 
-            SettingsSectionTitle("播放与同步")
+            SettingsSectionTitle(t.playbackSection)
             SettingsRow(
-                title = "状态刷新间隔",
-                subtitle = "推送不可用时的状态轮询频率",
-                value = "${settings.pollSeconds} 秒",
+                title = t.pollInterval,
+                subtitle = t.pollIntervalSub,
+                value = t.seconds.format(settings.pollSeconds),
                 onClick = { showPollDialog = true }
             )
             SettingsRow(
-                title = "媒体通知",
-                subtitle = "在通知栏显示播放控制",
+                title = t.mediaNotification,
+                subtitle = t.mediaNotificationSub,
                 trailing = {
                     Switch(
                         checked = settings.notificationsEnabled,
@@ -229,8 +244,8 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 }
             )
             SettingsRow(
-                title = "锁屏媒体控制",
-                subtitle = "在锁屏界面显示封面与播放控制",
+                title = t.lockScreen,
+                subtitle = t.lockScreenSub,
                 trailing = {
                     Switch(
                         checked = settings.lockScreenControls,
@@ -241,8 +256,8 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 }
             )
             SettingsRow(
-                title = "在线歌词与封面",
-                subtitle = "LRCLIB、MusicBrainz、网易云与 iTunes",
+                title = t.onlineMeta,
+                subtitle = t.onlineMetaSub,
                 trailing = {
                     Switch(
                         checked = settings.onlineMetadataEnabled,
@@ -253,19 +268,31 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 }
             )
 
-            SettingsSectionTitle("外观")
+            SettingsSectionTitle(t.appearanceSection)
             SettingsRow(
-                title = "主题",
-                subtitle = "深色模式适合夜间听音",
+                title = t.theme,
                 value = themeLabel(settings.theme),
                 icon = Icons.Rounded.Palette,
                 onClick = { showThemeDialog = true }
             )
-
-            SettingsSectionTitle("存储")
             SettingsRow(
-                title = "清除封面缓存",
-                subtitle = "封面图片可随时重新加载",
+                title = t.language,
+                value = languageDisplayName(AppLanguage.fromKey(settings.language), t),
+                icon = Icons.Rounded.Language,
+                onClick = { showLanguageDialog = true }
+            )
+
+            SettingsSectionTitle(t.storageSection)
+            SettingsRow(
+                title = t.lyricsLibrary,
+                subtitle = viewModel.lyricsLibraryPath(),
+                value = "$lyricsCount 个 .lrc",
+                icon = Icons.Rounded.Lyrics,
+                onClick = { showClearLyricsDialog = true }
+            )
+            SettingsRow(
+                title = t.clearCoverCache,
+                subtitle = t.clearCoverCacheSub,
                 icon = Icons.Rounded.Delete,
                 onClick = {
                     scope.launch {
@@ -279,22 +306,22 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 }
             )
 
-            SettingsSectionTitle("系统")
+            SettingsSectionTitle(t.systemSection)
             SettingsRow(
-                title = "系统信息",
-                subtitle = "服务器版本、播放器与音乐库统计",
+                title = t.systemInfo,
+                subtitle = t.systemInfoSub,
                 icon = Icons.Rounded.Info,
                 onClick = { navController.navigate(Routes.SYSTEM_INFO) }
             )
             SettingsRow(
-                title = "重新扫描音乐库",
-                subtitle = "让 Daphile 重新索引音乐目录",
+                title = t.rescan,
+                subtitle = t.rescanSub,
                 icon = Icons.Rounded.Refresh,
                 enabled = server != null,
                 onClick = { showRescanDialog = true }
             )
             SettingsRow(
-                title = "主机电源控制",
+                title = t.hostPower,
                 subtitle = "管理地址 ${server?.daphileBaseUrl ?: "—"}",
                 showChevron = false
             )
@@ -306,32 +333,28 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 )
                 Spacer(Modifier.height(10.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PowerButton("重启", Modifier.weight(1f)) {
+                    PowerButton(t.reboot, Modifier.weight(1f)) {
                         powerAction = HostPowerAction.Restart
                     }
-                    PowerButton("关机", Modifier.weight(1f), error = true) {
+                    PowerButton(t.shutdown, Modifier.weight(1f), error = true) {
                         powerAction = HostPowerAction.Shutdown
                     }
-                    PowerButton("挂起", Modifier.weight(1f)) {
+                    PowerButton(t.suspend, Modifier.weight(1f)) {
                         powerAction = HostPowerAction.Suspend
                     }
                 }
             }
 
-            SettingsSectionTitle("关于")
+            SettingsSectionTitle(t.aboutSection)
             SettingsRow(
-                title = "版本",
+                title = t.version,
                 value = BuildConfig.VERSION_NAME,
-                showChevron = false
-            )
-            SettingsRow(
-                title = "语言",
-                value = "简体中文",
-                showChevron = false
+                icon = Icons.Rounded.Info,
+                onClick = { showAboutDialog = true }
             )
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp)) {
                 Text(
-                    text = "达菲遥控 · Daphile Remote\n面向 Daphile 25.05 的第三方遥控应用。应用不收集个人数据，所有服务器信息与凭据仅保存在本机。",
+                    text = t.aboutLicense,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -348,41 +371,42 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
     }
 
     if (showThemeDialog) {
-        val themes = listOf(
-            "system" to "跟随系统",
-            "dark" to "深色",
-            "light" to "浅色"
-        )
+        val themes = AppTheme.entries
         AlertDialog(
             onDismissRequest = { showThemeDialog = false },
-            title = { Text("主题") },
+            title = { Text(t.theme) },
             text = {
-                Column {
-                    themes.forEach { (value, label) ->
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    themes.forEach { theme ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
                                     showThemeDialog = false
-                                    runCommand { viewModel.setTheme(value) }
+                                    runCommand { viewModel.setTheme(theme.key) }
                                 }
                                 .padding(vertical = 4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = settings.theme == value,
+                                selected = settings.theme == theme.key,
                                 onClick = {
                                     showThemeDialog = false
-                                    runCommand { viewModel.setTheme(value) }
+                                    runCommand { viewModel.setTheme(theme.key) }
                                 }
                             )
-                            Text(label)
+                            ThemeSwatch(theme)
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                text = theme.label,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showThemeDialog = false }) { Text("关闭") }
+                TextButton(onClick = { showThemeDialog = false }) { Text(t.close) }
             }
         )
     }
@@ -390,7 +414,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
     if (showPollDialog) {
         AlertDialog(
             onDismissRequest = { showPollDialog = false },
-            title = { Text("状态刷新间隔") },
+            title = { Text(t.pollInterval) },
             text = {
                 Column {
                     listOf(2, 3, 5, 10).forEach { seconds ->
@@ -411,13 +435,13 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                                     runCommand { viewModel.setPollSeconds(seconds) }
                                 }
                             )
-                            Text("$seconds 秒")
+                            Text(t.seconds.format(seconds))
                         }
                     }
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showPollDialog = false }) { Text("关闭") }
+                TextButton(onClick = { showPollDialog = false }) { Text(t.close) }
             }
         )
     }
@@ -425,18 +449,78 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
     if (showRescanDialog) {
         AlertDialog(
             onDismissRequest = { showRescanDialog = false },
-            title = { Text("重新扫描音乐库") },
-            text = { Text("触发服务器重新扫描音乐库？扫描期间音乐库可能不完整。") },
+            title = { Text(t.rescanTitle) },
+            text = { Text(t.rescanBody) },
             confirmButton = {
                 TextButton(onClick = {
                     showRescanDialog = false
-                    runCommand("已触发音乐库扫描") { viewModel.rescan() }
-                }) { Text("扫描") }
+                    runCommand(t.scanStarted) { viewModel.rescan() }
+                }) { Text(t.scan) }
             },
             dismissButton = {
-                TextButton(onClick = { showRescanDialog = false }) { Text("取消") }
+                TextButton(onClick = { showRescanDialog = false }) { Text(t.cancel) }
             }
         )
+    }
+
+    if (showClearLyricsDialog) {
+        AlertDialog(
+            onDismissRequest = { showClearLyricsDialog = false },
+            title = { Text(t.clearLyricsTitle) },
+            text = { Text(t.clearLyricsBody.format(lyricsCount)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showClearLyricsDialog = false
+                    scope.launch {
+                        runCatching { viewModel.clearLyricsLibrary() }
+                        lyricsCount = viewModel.lyricsLibraryCount()
+                        snackbar.showSnackbar(t.lyricsCleared)
+                    }
+                }) { Text(t.clear) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearLyricsDialog = false }) { Text(t.cancel) }
+            }
+        )
+    }
+
+    if (showLanguageDialog) {
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(t.language) },
+            text = {
+                Column {
+                    AppLanguage.entries.forEach { option ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showLanguageDialog = false
+                                    runCommand { viewModel.setLanguage(option) }
+                                }
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = AppLanguage.fromKey(settings.language) == option,
+                                onClick = {
+                                    showLanguageDialog = false
+                                    runCommand { viewModel.setLanguage(option) }
+                                }
+                            )
+                            Text(languageDisplayName(option, t))
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) { Text(t.close) }
+            }
+        )
+    }
+
+    if (showAboutDialog) {
+        AboutDialog(onDismiss = { showAboutDialog = false })
     }
 
     powerAction?.let { action ->
@@ -450,6 +534,79 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             }
         )
     }
+}
+
+@Composable
+private fun AboutDialog(onDismiss: () -> Unit) {
+    val t = strings
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Rounded.MusicNote,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(32.dp)
+            )
+        },
+        title = { Text(t.aboutTitle) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                Text(
+                    text = t.aboutAppName,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${t.version} ${BuildConfig.VERSION_NAME}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = t.aboutIntro,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = t.aboutFeatures,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(6.dp))
+                listOf(
+                    t.aboutFeature1,
+                    t.aboutFeature2,
+                    t.aboutFeature3,
+                    t.aboutFeature4
+                ).forEach { feature ->
+                    Text(
+                        text = "· $feature",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 3.dp)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = t.aboutAuthor,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = t.aboutLicense,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(t.close) }
+        }
+    )
 }
 
 @Composable
@@ -598,8 +755,24 @@ private fun PowerButton(
     }
 }
 
-private fun themeLabel(theme: String): String = when (theme) {
-    "light" -> "浅色"
-    "system" -> "跟随系统"
-    else -> "深色"
+private fun themeLabel(theme: String): String = AppTheme.fromKey(theme).label
+
+@Composable
+private fun ThemeSwatch(theme: AppTheme) {
+    val scheme = remember(theme) { colorSchemeFor(theme, theme.isDarkFamily) }
+    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+        listOf(
+            scheme.primary,
+            scheme.secondary,
+            scheme.surfaceVariant,
+            scheme.background
+        ).forEach { color ->
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(color)
+            )
+        }
+    }
 }

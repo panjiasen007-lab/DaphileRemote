@@ -3,6 +3,7 @@ package com.daphile.remote.data.online
 import android.content.Context
 import com.daphile.remote.data.model.LyricLine
 import com.daphile.remote.data.model.Lyrics
+import com.daphile.remote.data.model.LyricsSource
 import com.daphile.remote.data.model.Track
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -14,6 +15,7 @@ import org.json.JSONObject
 import java.io.File
 import java.io.IOException
 import java.security.MessageDigest
+import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
@@ -31,23 +33,117 @@ class OnlineMetadataService(private val context: Context) {
         .build()
 
     private val lyricsDir = File(context.filesDir, "lyrics_cache").apply { mkdirs() }
+    private val lyricsLibraryDir = File(context.filesDir, "lyrics").apply { mkdirs() }
     private val artworkPrefs = context.getSharedPreferences("online_artwork_cache", Context.MODE_PRIVATE)
     private val lyricsMemory = ConcurrentHashMap<String, Lyrics>()
 
-    suspend fun lyricsFor(track: Track): Lyrics? = withContext(Dispatchers.IO) {
+    suspend fun lyricsFor(track: Track, force: Boolean = false): Lyrics? = withContext(Dispatchers.IO) {
         if (track.title.isBlank()) return@withContext null
         val key = hashKey("${track.artist}|${track.title}|${track.album}")
-        lyricsMemory[key]?.let { return@withContext it }
-        readLyricsCache(key)?.let {
-            lyricsMemory[key] = it
-            return@withContext it
+        if (!force) {
+            lyricsMemory[key]?.let { return@withContext it }
+            // 优先读取按歌曲目录保存的 .lrc
+            readSavedLyrics(track)?.let {
+                lyricsMemory[key] = it
+                writeLyricsCache(key, it)
+                return@withContext it
+            }
+            readLyricsCache(key)?.let {
+                lyricsMemory[key] = it
+                saveLyricsCopy(track, it)
+                return@withContext it
+            }
         }
-        val online = fetchLrclib(track) ?: fetchNetease(track)
+        val online = fetchNetease(track) ?: fetchQqMusic(track) ?: fetchLrclib(track)
         if (online != null) {
             lyricsMemory[key] = online
             writeLyricsCache(key, online)
+            saveLyricsCopy(track, online)
         }
         online
+    }
+
+    /** 按指定来源强制在线获取，成功后覆盖本地缓存与 .lrc 副本。 */
+    suspend fun lyricsFrom(track: Track, source: LyricsSource): Lyrics? = withContext(Dispatchers.IO) {
+        if (track.title.isBlank()) return@withContext null
+        val fetched = when (source) {
+            LyricsSource.AUTO -> fetchNetease(track) ?: fetchQqMusic(track) ?: fetchLrclib(track)
+            LyricsSource.NETEASE -> fetchNetease(track)
+            LyricsSource.QQ -> fetchQqMusic(track)
+            LyricsSource.LRCLIB -> fetchLrclib(track)
+        } ?: return@withContext null
+        val key = hashKey("${track.artist}|${track.title}|${track.album}")
+        lyricsMemory[key] = fetched
+        writeLyricsCache(key, fetched)
+        saveLyricsCopy(track, fetched)
+        fetched
+    }
+
+    /** 本地歌词库中的 .lrc 路径，按 艺术家/专辑/曲名 归档，便于随音乐一起备份。 */
+    fun lyricsFileFor(track: Track): File = File(
+        File(File(lyricsLibraryDir, safeName(track.artist.ifBlank { "未知艺术家" })), safeName(track.album.ifBlank { "未知专辑" })),
+        "${safeName(track.title)}.lrc"
+    )
+
+    /** 已保存歌词的文件路径，尚未保存时返回 null。 */
+    fun savedLyricsPath(track: Track): String? =
+        lyricsFileFor(track).takeIf { it.exists() }?.absolutePath
+
+    suspend fun saveLyrics(track: Track, lyrics: Lyrics): File = withContext(Dispatchers.IO) {
+        saveLyricsCopy(track, lyrics)
+    }
+
+    fun lyricsLibraryPath(): String = lyricsLibraryDir.absolutePath
+
+    fun lyricsLibraryCount(): Int =
+        lyricsLibraryDir.walkTopDown().count { it.isFile && it.extension.equals("lrc", true) }
+
+    /** 清空本地歌词库与在线歌词缓存，返回删除的文件数。 */
+    fun clearLyricsLibrary(): Int {
+        var removed = 0
+        runCatching {
+            lyricsLibraryDir.deleteRecursively()
+            lyricsDir.deleteRecursively()
+        }
+        lyricsLibraryDir.mkdirs()
+        lyricsDir.mkdirs()
+        lyricsMemory.clear()
+        // 统计删除数量仅用于提示，目录已重建
+        removed = lyricsLibraryCount()
+        return removed
+    }
+
+    private fun readSavedLyrics(track: Track): Lyrics? {
+        val file = lyricsFileFor(track)
+        if (!file.exists()) return null
+        return runCatching {
+            buildLyrics(file.readText(), "本地歌词")
+        }.getOrNull()
+    }
+
+    private fun saveLyricsCopy(track: Track, lyrics: Lyrics): File {
+        val file = lyricsFileFor(track)
+        runCatching {
+            file.parentFile?.mkdirs()
+            file.writeText(lyrics.plainText.ifBlank { lyrics.lines.joinToString("\n") { "[${formatTime(it.timeMs)}]${it.text}" } })
+        }
+        return file
+    }
+
+    private fun formatTime(timeMs: Long): String {
+        val minutes = timeMs / 60_000
+        val seconds = (timeMs % 60_000) / 1000
+        val centis = (timeMs % 1000) / 10
+        return String.format(Locale.US, "%02d:%02d.%02d", minutes, seconds, centis)
+    }
+
+    private fun safeName(value: String): String {
+        val cleaned = value
+            .replace(Regex("""[\\/:*?"<>|]"""), "_")
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+            .trimEnd('.')
+        return cleaned.ifBlank { "未命名" }.take(80)
     }
 
     fun parseLyricsText(raw: String, source: String): Lyrics? = buildLyrics(raw, source)
@@ -64,6 +160,7 @@ class OnlineMetadataService(private val context: Context) {
             }
             val resolved = fetchMusicBrainzCover(artist, album)
                 ?: fetchNeteaseCover(artist, album)
+                ?: fetchQqCover(artist, album)
                 ?: fetchItunesCover(artist, album)
             artworkPrefs.edit().putString(key, resolved ?: NONE).apply()
             resolved
@@ -157,6 +254,72 @@ class OnlineMetadataService(private val context: Context) {
         }
     }
 
+    /**
+     * QQ 音乐：先用 smartbox 搜索取歌曲 mid，再请求歌词。
+     * 该接口无需鉴权，但需要 y.qq.com 的 Referer。
+     */
+    private fun fetchQqMusic(track: Track): Lyrics? {
+        return try {
+            val songMid = qqSongMid(track) ?: return null
+            val url = "https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg".toHttpUrl().newBuilder()
+                .addQueryParameter("songmid", songMid)
+                .addQueryParameter("format", "json")
+                .addQueryParameter("nobase64", "1")
+                .addQueryParameter("g_tk", "5381")
+                .addQueryParameter("loginUin", "0")
+                .addQueryParameter("hostUin", "0")
+                .addQueryParameter("inCharset", "utf8")
+                .addQueryParameter("outCharset", "utf-8")
+                .addQueryParameter("notice", "0")
+                .addQueryParameter("platform", "yqq.json")
+                .addQueryParameter("needNewCode", "0")
+                .build()
+            val body = get(url.toString(), QQ_HEADERS) ?: return null
+            val text = JSONObject(body).optString("lyric")
+            if (text.isBlank()) return null
+            buildLyrics(text, "QQ 音乐")
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    /** 通过 smartbox 搜索曲目，优先返回歌名与艺人同时匹配的条目。 */
+    private fun qqSongMid(track: Track): String? {
+        val title = cleanTitle(track.title, track.artist)
+        val query = listOf(track.artist, title)
+            .filter { it.isNotBlank() && it != "无艺人名" }
+            .joinToString(" ")
+        if (query.isBlank()) return null
+        val url = "https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg".toHttpUrl().newBuilder()
+            .addQueryParameter("key", query)
+            .addQueryParameter("format", "json")
+            .addQueryParameter("g_tk", "5381")
+            .addQueryParameter("loginUin", "0")
+            .addQueryParameter("hostUin", "0")
+            .addQueryParameter("inCharset", "utf8")
+            .addQueryParameter("outCharset", "utf-8")
+            .addQueryParameter("notice", "0")
+            .addQueryParameter("platform", "yqq.json")
+            .addQueryParameter("needNewCode", "0")
+            .build()
+        val body = get(url.toString(), QQ_HEADERS) ?: return null
+        val songs = JSONObject(body)
+            .optJSONObject("data")
+            ?.optJSONObject("song")
+            ?.optJSONArray("itemlist")
+            ?: return null
+        if (songs.length() == 0) return null
+        val candidates = (0 until songs.length()).mapNotNull { songs.optJSONObject(it) }
+        val best = candidates.firstOrNull { item ->
+            val name = item.optString("name")
+            val singer = item.optString("singer")
+            (name.contains(title, true) || title.contains(name, true)) &&
+                (track.artist.isBlank() || singer.contains(track.artist, true) ||
+                    track.artist.contains(singer, true))
+        } ?: candidates.firstOrNull()
+        return best?.optString("mid")?.takeIf { it.isNotBlank() }
+    }
+
     private fun buildLyrics(raw: String, source: String): Lyrics? {
         if (raw.isBlank()) return null
         val parsed = parseLrc(raw)
@@ -171,12 +334,17 @@ class OnlineMetadataService(private val context: Context) {
 
     private fun parseLrc(text: String): List<LyricLine> {
         val timeTag = Regex("""\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?]""")
+        val metadataTag = Regex(
+            """^(作词|作曲|编曲|制作人|制作|监制|混音|母带|母带处理|人声编辑|人声|录音|和声|吉他|贝斯|鼓|弦乐|出品|发行|策划|统筹|演唱|原唱|词|曲)\s*[:：]"""
+        )
         val lines = mutableListOf<LyricLine>()
         text.lineSequence().forEach { raw ->
             val matches = timeTag.findAll(raw).toList()
             if (matches.isEmpty()) return@forEach
             val content = raw.replace(timeTag, "").trim()
             if (content.isBlank()) return@forEach
+            // 过滤网易云 LRC 头部的作词/作曲等制作信息
+            if (metadataTag.containsMatchIn(content)) return@forEach
             matches.forEach { match ->
                 val minutes = match.groupValues[1].toLongOrNull() ?: 0
                 val seconds = match.groupValues[2].toLongOrNull() ?: 0
@@ -286,6 +454,50 @@ class OnlineMetadataService(private val context: Context) {
             }
         }
         return null
+    }
+
+    /**
+     * QQ 音乐封面：用 smartbox 搜索专辑，取专辑 mid 拼出 500x500 封面地址。
+     */
+    private fun fetchQqCover(artist: String, album: String): String? {
+        if (album.isBlank()) return null
+        return try {
+            val term = listOf(artist, album)
+                .filter { it.isNotBlank() && it != "无艺人名" }
+                .joinToString(" ")
+            val url = QQ_SEARCH_URL.toHttpUrl().newBuilder()
+                .addQueryParameter("key", term)
+                .addQueryParameter("format", "json")
+                .addQueryParameter("g_tk", "5381")
+                .addQueryParameter("loginUin", "0")
+                .addQueryParameter("hostUin", "0")
+                .addQueryParameter("inCharset", "utf8")
+                .addQueryParameter("outCharset", "utf-8")
+                .addQueryParameter("notice", "0")
+                .addQueryParameter("platform", "yqq.json")
+                .addQueryParameter("needNewCode", "0")
+                .build()
+            val body = get(url.toString(), QQ_HEADERS) ?: return null
+            val albums = JSONObject(body)
+                .optJSONObject("data")
+                ?.optJSONObject("album")
+                ?.optJSONArray("itemlist")
+                ?: return null
+            if (albums.length() == 0) return null
+            val candidates = (0 until albums.length()).mapNotNull { albums.optJSONObject(it) }
+            val best = candidates.firstOrNull { item ->
+                val name = item.optString("name")
+                val singer = item.optString("singer")
+                (name.contains(album, true) || album.contains(name, true)) &&
+                    (artist.isBlank() || singer.contains(artist, true) ||
+                        artist.contains(singer, true))
+            } ?: candidates.firstOrNull()
+            val mid = best?.optString("mid")?.takeIf { it.isNotBlank() } ?: return null
+            val coverUrl = "https://y.gtimg.cn/music/photo_new/T002R500x500M000$mid.jpg"
+            if (headOk(coverUrl)) coverUrl else null
+        } catch (_: Throwable) {
+            null
+        }
     }
 
     private fun fetchItunesCover(artist: String, album: String): String? {
@@ -399,5 +611,10 @@ class OnlineMetadataService(private val context: Context) {
         private const val USER_AGENT = "DaphileRemote/1.1 (Android)"
         private const val DESKTOP_UA =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+        private const val QQ_SEARCH_URL = "https://c.y.qq.com/splcloud/fcgi-bin/smartbox_new.fcg"
+        private val QQ_HEADERS = mapOf(
+            "User-Agent" to DESKTOP_UA,
+            "Referer" to "https://y.qq.com/"
+        )
     }
 }
