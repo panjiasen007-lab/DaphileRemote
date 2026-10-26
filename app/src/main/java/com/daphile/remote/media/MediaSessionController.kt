@@ -155,6 +155,16 @@ class MediaSessionController(
         }
     }
 
+    /** 通知优先交给前台服务承载，锁屏后系统不会冻结轮询。 */
+    private fun publishNotification(notification: Notification) {
+        runCatching { PlaybackService.publish(context, notification) }
+            .onFailure {
+                runCatching {
+                    NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+                }
+            }
+    }
+
     private fun playbackState(nowPlaying: NowPlaying): PlaybackStateCompat {
         val state = when {
             nowPlaying.isPlaying -> PlaybackStateCompat.STATE_PLAYING
@@ -247,12 +257,11 @@ class MediaSessionController(
             )
         artwork?.let { builder.setLargeIcon(it) }
 
-        runCatching {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
-        }
+        publishNotification(builder.build())
     }
 
     private fun cancelNotification() {
+        PlaybackService.stop(context)
         runCatching {
             NotificationManagerCompat.from(context).cancel(NOTIFICATION_ID)
         }

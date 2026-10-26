@@ -214,8 +214,6 @@ enum class AppLanguage(val key: String, val label: String) {
     AZ("az", "Azərbaycan dili"),
     FA("fa", "فارسی");
 
-    val rtl: Boolean get() = this == AR || this == FA
-
     companion object {
         fun fromKey(key: String?): AppLanguage = entries.firstOrNull { it.key == key } ?: AUTO
     }

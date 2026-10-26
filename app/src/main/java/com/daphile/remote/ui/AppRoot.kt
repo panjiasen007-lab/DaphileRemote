@@ -51,7 +51,6 @@ import com.daphile.remote.ui.common.ConnectionBanner
 import com.daphile.remote.ui.i18n.LocalStrings
 import com.daphile.remote.ui.i18n.UiStrings
 import com.daphile.remote.ui.i18n.rememberUiStrings
-import com.daphile.remote.ui.i18n.rememberUiLanguage
 import com.daphile.remote.ui.navigation.Routes
 import com.daphile.remote.ui.screens.AlbumDetailScreen
 import com.daphile.remote.ui.screens.AlbumsScreen
@@ -101,8 +100,8 @@ fun DaphileRemoteApp() {
     val dark = resolveThemeDark(appSettings.theme)
     SystemBars(dark = dark)
     val strings = rememberUiStrings(appSettings.language)
-    val language = rememberUiLanguage(appSettings.language)
-    val layoutDirection = if (language.rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+    // 阿拉伯语、波斯语保持左到右排版，避免整页镜像后布局「倒序」
+    val layoutDirection = LayoutDirection.Ltr
 
     if (servers == null) {
         SplashScreen()
