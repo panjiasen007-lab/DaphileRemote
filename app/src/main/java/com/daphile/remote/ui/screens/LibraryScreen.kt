@@ -17,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.Casino
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.DateRange
@@ -43,6 +45,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -52,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -87,6 +91,8 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     val t = strings
     var showScanDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
+    var showRandomDialog by remember { androidx.compose.runtime.mutableStateOf(false) }
+    var randomCountText by remember { androidx.compose.runtime.mutableStateOf("20") }
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -121,7 +127,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                     onClick = { showScanDialog = true },
                     enabled = server != null
                 ) {
-                    Icon(Icons.Rounded.Refresh, contentDescription = "扫描音乐库")
+                    Icon(Icons.Rounded.Refresh, contentDescription = t.scanLibrary)
                 }
             }
             scanStatus?.let { status ->
@@ -149,7 +155,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = status.message.ifBlank {
-                                    if (status.scanning) "正在扫描音乐库…" else "扫描完成"
+                                    if (status.scanning) t.scanningLibrary else t.scanFinished
                                 },
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -183,7 +189,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = viewModel::clearQuery) {
-                            Icon(Icons.Rounded.Close, contentDescription = "清除")
+                            Icon(Icons.Rounded.Close, contentDescription = t.clearInput)
                         }
                     }
                 }
@@ -211,6 +217,11 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                         subtitle = strings.songUnit.format(serverInfo?.songCount ?: 0),
                         icon = Icons.Rounded.MusicNote
                     ) { navController.navigate(Routes.SONGS) },
+                    CategoryItem(
+                        title = strings.myPlaylists,
+                        subtitle = strings.myPlaylistsSub,
+                        icon = Icons.Rounded.PlaylistPlay
+                    ) { navController.navigate(Routes.MY_PLAYLISTS) },
                     CategoryItem(
                         title = strings.artists,
                         subtitle = strings.artistUnit.format(serverInfo?.artistCount ?: 0),
@@ -290,8 +301,72 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { navController.navigate(Routes.DAILY) },
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.AutoAwesome,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = strings.dailyRecommendation,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = strings.dailyRecommendationSub,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showRandomDialog = true },
+                    shape = RoundedCornerShape(18.dp),
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Rounded.Casino,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = strings.randomToQueue,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = strings.randomToQueueSub,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .clickable {
-                            navController.navigate(Routes.albums("最近添加", sort = "new"))
+                            navController.navigate(Routes.albums(t.sortNew, sort = "new"))
                         },
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.surfaceVariant
@@ -308,12 +383,12 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                         Spacer(Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "最近添加",
+                                text = t.sortNew,
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                text = "按入库时间查看新专辑",
+                                text = t.recentlyAddedSub,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -331,7 +406,7 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                         runCommand { viewModel.playTrack(track.id) }
                     },
                     onQueueTrack = { track ->
-                        runCommand("已加入队列") { viewModel.queueTrack(track.id) }
+                        runCommand(t.queueAddedCount) { viewModel.queueTrack(track.id) }
                     },
                     onOpenAlbum = { album -> navController.navigate(Routes.album(album.id)) },
                     onOpenArtist = { artist ->
@@ -352,11 +427,11 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
     if (showScanDialog) {
         AlertDialog(
             onDismissRequest = { showScanDialog = false },
-            title = { Text("扫描音乐库") },
+            title = { Text(t.scanLibrary) },
             text = {
                 Column {
                     Text(
-                        text = "让 Daphile 重新检查音乐目录，更新新增或变更的曲目。",
+                        text = t.scanDialogBody,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -364,30 +439,70 @@ fun LibraryScreen(navController: NavController, modifier: Modifier = Modifier) {
                     TextButton(
                         onClick = {
                             showScanDialog = false
-                            runCommand("已开始扫描") { viewModel.startScan(full = false) }
+                            runCommand(t.scanStartedUpdate) { viewModel.startScan(full = false) }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("扫描更新（推荐）")
+                        Text(t.scanUpdate)
                     }
                     TextButton(
                         onClick = {
                             showScanDialog = false
-                            runCommand("已开始重建音乐库") { viewModel.startScan(full = true) }
+                            runCommand(t.rebuildStarted) { viewModel.startScan(full = true) }
                         },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("重建音乐库", color = MaterialTheme.colorScheme.error)
+                        Text(t.rebuildLibrary, color = MaterialTheme.colorScheme.error)
                     }
                     Text(
-                        text = "重建会清空索引并重新扫描，可能耗时较长。扫描进度会显示在音乐库页面顶部。",
+                        text = t.rebuildHint,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showScanDialog = false }) { Text("取消") }
+                TextButton(onClick = { showScanDialog = false }) { Text(t.cancel) }
+            }
+        )
+    }
+
+    if (showRandomDialog) {
+        val parsed = randomCountText.toIntOrNull()
+        AlertDialog(
+            onDismissRequest = { showRandomDialog = false },
+            title = { Text(t.randomCountTitle) },
+            text = {
+                Column {
+                    Text(
+                        text = t.randomCountHint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = randomCountText,
+                        onValueChange = { value ->
+                            randomCountText = value.filter { it.isDigit() }.take(3)
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val count = parsed?.coerceIn(1, 200) ?: return@TextButton
+                        showRandomDialog = false
+                        runCommand(t.randomQueued.format(count)) { viewModel.queueRandomTracks(count) }
+                    },
+                    enabled = parsed != null && parsed in 1..200
+                ) { Text(t.confirm) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRandomDialog = false }) { Text(t.cancel) }
             }
         )
     }
@@ -455,6 +570,7 @@ private fun SearchContent(
     onOpenAlbum: (Album) -> Unit,
     onOpenArtist: (Artist) -> Unit
 ) {
+    val t = strings
     when {
         searching -> LoadingState()
         error != null -> {
@@ -468,19 +584,19 @@ private fun SearchContent(
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
-                TextButton(onClick = onRetry) { Text("重试") }
+                TextButton(onClick = onRetry) { Text(t.retry) }
             }
         }
         results != null -> {
             if (results.songs.isEmpty() && results.albums.isEmpty() && results.artists.isEmpty()) {
                 EmptyState(
                     icon = Icons.Rounded.Search,
-                    title = "没有找到结果",
-                    body = "未找到与「${results.query}」相关的内容，试试其他关键词"
+                    title = t.noSearchResultsTitle,
+                    body = t.noSearchResultsBody.format(results.query)
                 )
             } else {
                 if (results.songs.isNotEmpty()) {
-                    SearchSectionTitle("曲目", results.songs.size)
+                    SearchSectionTitle(t.tracks, results.songs.size)
                     results.songs.forEach { track ->
                         TrackRow(
                             track = track,
@@ -490,7 +606,7 @@ private fun SearchContent(
                                 IconButton(onClick = { onQueueTrack(track) }) {
                                     Icon(
                                         Icons.Rounded.PlaylistAdd,
-                                        contentDescription = "加入队列",
+                                        contentDescription = t.addToQueue,
                                         modifier = Modifier.size(19.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -502,7 +618,7 @@ private fun SearchContent(
                     Spacer(Modifier.height(12.dp))
                 }
                 if (results.albums.isNotEmpty()) {
-                    SearchSectionTitle("专辑", results.albums.size)
+                    SearchSectionTitle(t.albums, results.albums.size)
                     results.albums.forEach { album ->
                         SearchAlbumRow(
                             album = album,
@@ -513,7 +629,7 @@ private fun SearchContent(
                     Spacer(Modifier.height(12.dp))
                 }
                 if (results.artists.isNotEmpty()) {
-                    SearchSectionTitle("艺术家", results.artists.size)
+                    SearchSectionTitle(t.artists, results.artists.size)
                     results.artists.forEach { artist ->
                         SearchArtistRow(artist = artist, onClick = { onOpenArtist(artist) })
                     }

@@ -22,6 +22,9 @@ object Routes {
     const val FOLDERS = "folders"
     const val LYRICS = "lyrics"
     const val AUDIO_OUTPUT = "audio_output"
+    const val MY_PLAYLISTS = "my_playlists"
+    const val CUSTOM_PLAYLIST = "my_playlist/{playlistId}"
+    const val DAILY = "daily_recommendation"
 
     fun serverEdit(serverId: String? = null, first: Boolean = false): String =
         "server_edit?serverId=${Uri.encode(serverId.orEmpty())}&first=$first"
@@ -43,6 +46,8 @@ object Routes {
         "playlist/${Uri.encode(playlistId)}?name=${Uri.encode(name)}"
 
     fun browse(category: String): String = "browse/$category"
+
+    fun customPlaylist(playlistId: String): String = "my_playlist/${Uri.encode(playlistId)}"
 
     fun browser(source: String, pluginCmd: String, itemId: String, title: String): String =
         "browser/$source/${Uri.encode(pluginCmd)}/${Uri.encode(itemId)}?title=${Uri.encode(title)}"

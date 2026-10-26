@@ -50,6 +50,8 @@ import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.PageHeader
 import com.daphile.remote.ui.common.formatDuration
 import com.daphile.remote.ui.common.trackSpecs
+import com.daphile.remote.ui.i18n.UiStrings
+import com.daphile.remote.ui.i18n.strings
 import kotlinx.coroutines.launch
 import java.net.URLDecoder
 import java.util.Locale
@@ -68,6 +70,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
     val clipboard = LocalClipboardManager.current
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
     val path = remember(track?.url) { decodeLmsPath(track?.url.orEmpty()) }
     val coverUrl = server?.coverUrl(track?.coverId, nowPlaying?.playerId)
     val dsdLabel = dsdLabel(track?.type.orEmpty(), track?.sampleRate.orEmpty())
@@ -80,7 +83,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                 .verticalScroll(rememberScrollState())
         ) {
             PageHeader(
-                title = "音频输出",
+                title = t.audioOutputScreenTitle,
                 onBack = { navController.popBackStack() }
             )
             Column(
@@ -100,7 +103,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                         Spacer(Modifier.width(14.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = track?.title?.ifBlank { "未在播放" } ?: "未在播放",
+                                text = track?.title?.ifBlank { t.notPlayingTitle } ?: t.notPlayingTitle,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 maxLines = 1,
@@ -131,7 +134,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                                 )
                                 Spacer(Modifier.width(5.dp))
                                 Text(
-                                    text = playbackLabel(nowPlaying?.mode, nowPlaying?.power),
+                                    text = playbackLabel(nowPlaying?.mode, nowPlaying?.power, t),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.primary
                                 )
@@ -140,7 +143,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                     }
                 }
 
-                AudioSectionTitle("音源")
+                AudioSectionTitle(t.audioSource)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -149,19 +152,19 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                     Column(modifier = Modifier.padding(16.dp)) {
                         AudioInfoRow(
                             icon = Icons.Rounded.AudioFile,
-                            label = "路径",
+                            label = t.path,
                             value = path.ifBlank { "—" },
                             monospace = true,
                             action = if (path.isNotBlank()) {
                                 {
                                     clipboard.setText(AnnotatedString(path))
-                                    scope.launch { snackbar.showSnackbar("路径已复制") }
+                                    scope.launch { snackbar.showSnackbar(t.pathCopied) }
                                 }
                             } else null
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.GraphicEq,
-                            label = "格式",
+                            label = t.formatLabel,
                             value = listOf(formatLabel, dsdLabel)
                                 .filter { it.isNotBlank() }
                                 .joinToString(" / ")
@@ -169,37 +172,37 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.GraphicEq,
-                            label = "源采样率",
+                            label = t.sourceSampleRate,
                             value = formatRate(track?.sampleRate.orEmpty())
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.GraphicEq,
-                            label = "位深",
+                            label = t.bitDepth,
                             value = track?.sampleSize?.takeIf { it.isNotBlank() }
-                                ?.let { if (it == "1" && dsdLabel.isNotBlank()) "1 bit（DSD）" else "$it bit" }
+                                ?.let { if (it == "1" && dsdLabel.isNotBlank()) t.bitDsd else "$it bit" }
                                 ?: "—"
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.GraphicEq,
-                            label = "码率",
+                            label = t.bitRate,
                             value = track?.bitRate?.takeIf { it.isNotBlank() && it != "0" } ?: "—"
                         )
                         if (track?.channels != null && track.channels > 0) {
                             AudioInfoRow(
                                 icon = Icons.Rounded.GraphicEq,
-                                label = "声道",
+                                label = t.channels,
                                 value = track.channels.toString()
                             )
                         }
                         AudioInfoRow(
                             icon = Icons.Rounded.Info,
-                            label = "无损",
-                            value = if (track?.lossless == true) "是" else "否/未知"
+                            label = t.lossless,
+                            value = if (track?.lossless == true) t.yesValue else t.noOrUnknown
                         )
                     }
                 }
 
-                AudioSectionTitle("播放器与输出")
+                AudioSectionTitle(t.playersAndOutput)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -208,49 +211,49 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                     Column(modifier = Modifier.padding(16.dp)) {
                         AudioInfoRow(
                             icon = Icons.Rounded.Speaker,
-                            label = "输出设备",
+                            label = t.outputDevice,
                             value = player?.name ?: "—"
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.Speaker,
-                            label = "设备型号",
+                            label = t.deviceModel,
                             value = player?.model?.ifBlank { "Squeezelite / Daphile" } ?: "—"
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.Speaker,
-                            label = "输出引擎",
-                            value = "Daphile 音频引擎（Squeezelite）"
+                            label = t.outputEngine,
+                            value = t.outputEngineValue
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.GraphicEq,
-                            label = "输出规格",
+                            label = t.outputSpec,
                             value = if (dsdLabel.isNotBlank()) {
-                                "原生/DoP 由 Daphile 设备设置决定"
+                                t.outputSpecDsd
                             } else if (track != null) {
-                                "Daphile 自动匹配音频设备"
+                                t.outputSpecAuto
                             } else {
                                 "—"
                             }
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.Speaker,
-                            label = "音量",
+                            label = t.volume,
                             value = when {
                                 nowPlaying == null -> "—"
                                 nowPlaying?.canSetVolume == false ->
-                                    "固定电平 ${nowPlaying?.volume ?: 100}"
+                                    t.fixedLevel.format(nowPlaying?.volume ?: 100)
                                 else -> "${nowPlaying?.volume ?: 0} / 100"
                             }
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.Info,
-                            label = "LMS 版本",
+                            label = t.lmsVersion,
                             value = serverInfo?.version?.ifBlank { "—" } ?: "—"
                         )
                     }
                 }
 
-                AudioSectionTitle("实时状态")
+                AudioSectionTitle(t.realtimeStatus)
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -259,7 +262,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                     Column(modifier = Modifier.padding(16.dp)) {
                         AudioInfoRow(
                             icon = Icons.Rounded.Timer,
-                            label = "已播放",
+                            label = t.elapsed,
                             value = formatDuration(
                                 nowPlaying?.let { np ->
                                     if (np.duration > 0) np.time.coerceIn(0.0, np.duration)
@@ -269,12 +272,12 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.Timer,
-                            label = "总时长",
+                            label = t.totalDuration,
                             value = formatDuration(nowPlaying?.duration ?: 0.0)
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.GraphicEq,
-                            label = "队列位置",
+                            label = t.queuePosition,
                             value = if (nowPlaying != null && (nowPlaying?.trackCount ?: 0) > 0) {
                                 "${(nowPlaying?.currentIndex ?: 0) + 1} / ${nowPlaying?.trackCount}"
                             } else {
@@ -283,14 +286,14 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                         )
                         AudioInfoRow(
                             icon = Icons.Rounded.Info,
-                            label = "数据源",
-                            value = if (track?.url?.startsWith("http") == true) "网络流" else "本地文件"
+                            label = t.dataSource,
+                            value = if (track?.url?.startsWith("http") == true) t.networkStream else t.localFile
                         )
                         val specs = trackSpecs(track)
                         if (specs.isNotEmpty()) {
                             AudioInfoRow(
                                 icon = Icons.Rounded.GraphicEq,
-                                label = "规格摘要",
+                                label = t.specSummary,
                                 value = specs.joinToString(" · ")
                             )
                         }
@@ -310,7 +313,7 @@ fun AudioOutputScreen(navController: NavController, modifier: Modifier = Modifie
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            text = "以上为 LMS 返回的实时音频规格。Daphile 负责实际解码与 DAC 输出，输出采样率和 DSD 模式由 Daphile 音频设备设置决定。",
+                            text = t.audioOutputNote,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -384,7 +387,7 @@ private fun AudioInfoRow(
             IconButton(onClick = action, modifier = Modifier.size(28.dp)) {
                 Icon(
                     Icons.Rounded.ContentCopy,
-                    contentDescription = "复制",
+                    contentDescription = strings.copyAction,
                     modifier = Modifier.size(14.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -443,9 +446,9 @@ private fun formatRate(rate: String): String {
     }
 }
 
-private fun playbackLabel(mode: String?, power: Boolean?): String = when {
-    power == false -> "播放器已关闭"
-    mode == "play" -> "正在播放"
-    mode == "pause" -> "已暂停"
-    else -> "已停止"
+private fun playbackLabel(mode: String?, power: Boolean?, t: UiStrings): String = when {
+    power == false -> t.playerOff
+    mode == "play" -> t.playingState
+    mode == "pause" -> t.pausedToast
+    else -> t.stoppedState
 }

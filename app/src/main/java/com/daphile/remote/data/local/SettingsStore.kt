@@ -11,7 +11,10 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.daphile.remote.data.model.AppSettings
+import com.daphile.remote.data.model.CustomPlaylist
+import com.daphile.remote.data.model.DailyRecommendation
 import com.daphile.remote.data.model.ServerConfig
+import com.daphile.remote.data.model.Track
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
@@ -42,6 +45,8 @@ class SettingsStore(
         val lockScreenControls = booleanPreferencesKey("lock_screen_controls")
         val lyricsSource = stringPreferencesKey("lyrics_source")
         val language = stringPreferencesKey("app_language")
+        val customPlaylists = stringPreferencesKey("custom_playlists")
+        val dailyRecommendation = stringPreferencesKey("daily_recommendation")
         fun playerFor(serverId: String) = stringPreferencesKey("player_$serverId")
     }
 
@@ -154,6 +159,139 @@ class SettingsStore(
 
     suspend fun setLanguage(languageKey: String) {
         context.settingsDataStore.edit { it[Keys.language] = languageKey }
+    }
+
+    val customPlaylists: Flow<List<CustomPlaylist>> = safeData.map { preferences ->
+        decodePlaylists(preferences[Keys.customPlaylists])
+    }
+
+    val dailyRecommendation: Flow<DailyRecommendation?> = safeData.map { preferences ->
+        decodeDaily(preferences[Keys.dailyRecommendation])
+    }
+
+    suspend fun saveCustomPlaylists(playlists: List<CustomPlaylist>) {
+        context.settingsDataStore.edit { it[Keys.customPlaylists] = encodePlaylists(playlists) }
+    }
+
+    suspend fun saveDailyRecommendation(recommendation: DailyRecommendation) {
+        context.settingsDataStore.edit {
+            it[Keys.dailyRecommendation] = encodeDaily(recommendation)
+        }
+    }
+
+    private fun decodePlaylists(raw: String?): List<CustomPlaylist> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            val array = JSONArray(raw)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val item = array.optJSONObject(index) ?: continue
+                    val id = item.optString("id")
+                    if (id.isBlank()) continue
+                    add(
+                        CustomPlaylist(
+                            id = id,
+                            name = item.optString("name"),
+                            tracks = decodeTracks(item.optJSONArray("tracks")),
+                            createdAt = item.optLong("createdAt"),
+                            updatedAt = item.optLong("updatedAt")
+                        )
+                    )
+                }
+            }
+        } catch (_: Throwable) {
+            emptyList()
+        }
+    }
+
+    private fun encodePlaylists(playlists: List<CustomPlaylist>): String {
+        val array = JSONArray()
+        playlists.forEach { playlist ->
+            array.put(
+                JSONObject()
+                    .put("id", playlist.id)
+                    .put("name", playlist.name)
+                    .put("tracks", encodeTracks(playlist.tracks))
+                    .put("createdAt", playlist.createdAt)
+                    .put("updatedAt", playlist.updatedAt)
+            )
+        }
+        return array.toString()
+    }
+
+    private fun decodeDaily(raw: String?): DailyRecommendation? {
+        if (raw.isNullOrBlank()) return null
+        return try {
+            val item = JSONObject(raw)
+            DailyRecommendation(
+                date = item.optString("date"),
+                tracks = decodeTracks(item.optJSONArray("tracks"))
+            )
+        } catch (_: Throwable) {
+            null
+        }
+    }
+
+    private fun encodeDaily(recommendation: DailyRecommendation): String =
+        JSONObject()
+            .put("date", recommendation.date)
+            .put("tracks", encodeTracks(recommendation.tracks))
+            .toString()
+
+    private fun encodeTracks(tracks: List<Track>): JSONArray {
+        val array = JSONArray()
+        tracks.forEach { track ->
+            array.put(
+                JSONObject()
+                    .put("id", track.id)
+                    .put("title", track.title)
+                    .put("artist", track.artist)
+                    .put("album", track.album)
+                    .put("albumId", track.albumId)
+                    .put("duration", track.duration)
+                    .put("coverId", track.coverId)
+                    .put("type", track.type)
+                    .put("sampleRate", track.sampleRate)
+                    .put("sampleSize", track.sampleSize)
+                    .put("bitRate", track.bitRate)
+                    .put("trackNum", track.trackNum)
+                    .put("disc", track.disc)
+                    .put("url", track.url)
+                    .put("lossless", track.lossless)
+                    .put("channels", track.channels)
+            )
+        }
+        return array
+    }
+
+    private fun decodeTracks(array: JSONArray?): List<Track> {
+        if (array == null) return emptyList()
+        return buildList {
+            for (index in 0 until array.length()) {
+                val item = array.optJSONObject(index) ?: continue
+                add(
+                    Track(
+                        index = index,
+                        id = item.optString("id"),
+                        title = item.optString("title"),
+                        artist = item.optString("artist"),
+                        album = item.optString("album"),
+                        albumId = item.optString("albumId"),
+                        duration = item.optDouble("duration", 0.0),
+                        coverId = item.optString("coverId"),
+                        type = item.optString("type"),
+                        sampleRate = item.optString("sampleRate"),
+                        sampleSize = item.optString("sampleSize"),
+                        bitRate = item.optString("bitRate"),
+                        trackNum = item.optInt("trackNum"),
+                        disc = item.optInt("disc"),
+                        url = item.optString("url"),
+                        lossless = item.optBoolean("lossless"),
+                        channels = item.optInt("channels")
+                    )
+                )
+            }
+        }
     }
 
     private fun decodeServers(raw: String?): List<ServerConfig> {

@@ -4,6 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import com.daphile.remote.ui.i18n.UiStrings
 
 /**
  * 外观主题。除默认深色/浅色外，提供四季与两种东方风格主题。
@@ -30,6 +31,18 @@ enum class AppTheme(val key: String, val label: String) {
         fun fromKey(key: String?): AppTheme =
             entries.firstOrNull { it.key == key } ?: Dark
     }
+}
+
+fun themeDisplayName(theme: AppTheme, strings: UiStrings): String = when (theme) {
+    AppTheme.System -> strings.themeSystem
+    AppTheme.Dark -> strings.themeDark
+    AppTheme.Light -> strings.themeLight
+    AppTheme.Spring -> strings.themeSpring
+    AppTheme.Summer -> strings.themeSummer
+    AppTheme.Autumn -> strings.themeAutumn
+    AppTheme.Winter -> strings.themeWinter
+    AppTheme.Taiji -> strings.themeTaiji
+    AppTheme.Panda -> strings.themePanda
 }
 
 private fun scheme(

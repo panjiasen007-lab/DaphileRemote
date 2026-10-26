@@ -127,7 +127,7 @@ class NowPlayingViewModel(application: Application) : AndroidViewModel(applicati
     suspend fun playQueueIndex(index: Int) = repository.playQueueIndex(index)
     suspend fun removeQueueItem(index: Int) = repository.removeQueueItem(index)
     suspend fun clearQueue() = repository.clearQueue()
-    suspend fun saveQueue(name: String) = repository.saveQueue(name)
+    suspend fun saveQueueAsPlaylist(name: String) = repository.saveQueueAsCustomPlaylist(name)
 
     suspend fun addCurrentFavorite() {
         repository.addCurrentFavorite()

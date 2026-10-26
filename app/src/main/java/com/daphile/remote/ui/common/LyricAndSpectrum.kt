@@ -49,6 +49,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.daphile.remote.data.model.Lyrics
+import com.daphile.remote.ui.i18n.strings
 import kotlin.math.abs
 import kotlin.math.sin
 import kotlin.random.Random
@@ -75,6 +76,7 @@ fun LyricSpotlight(
     modifier: Modifier = Modifier,
     onOpenLyrics: () -> Unit
 ) {
+    val t = strings
     val lines = remember(lyrics) {
         lyrics?.lines
             ?.filterNot { isCreditLine(it.text) }
@@ -100,8 +102,8 @@ fun LyricSpotlight(
             verticalArrangement = Arrangement.Center
         ) {
             when {
-                loading -> LyricHint("正在匹配歌词…")
-                lyrics == null || lines.isEmpty() -> LyricHint("暂无歌词\n点按查看歌词页")
+                loading -> LyricHint(t.matchingLyrics)
+                lyrics == null || lines.isEmpty() -> LyricHint(t.noLyricsHint)
                 !lyrics.synced -> {
                     Text(
                         text = lines.joinToString("\n") { it.text },
@@ -141,7 +143,7 @@ fun LyricSpotlight(
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(
-                    text = lyrics?.source?.let { "歌词 · $it" } ?: "歌词",
+                    text = lyrics?.source?.let { t.lyricsWithSource.format(it) } ?: t.lyrics,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                     maxLines = 1

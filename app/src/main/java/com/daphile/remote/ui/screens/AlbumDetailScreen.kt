@@ -74,9 +74,11 @@ fun AlbumDetailScreen(
     var errorText by remember { mutableStateOf<String?>(null) }
     var onlineCover by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val t = strings
+    val playlists by viewModel.customPlaylists.collectAsStateWithLifecycle()
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -106,7 +108,7 @@ fun AlbumDetailScreen(
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = album?.title ?: "专辑",
+                title = album?.title ?: t.albums,
                 onBack = { navController.popBackStack() }
             )
             when {
@@ -123,7 +125,7 @@ fun AlbumDetailScreen(
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -144,7 +146,7 @@ fun AlbumDetailScreen(
                             )
                             Spacer(Modifier.height(18.dp))
                             Text(
-                                text = info?.title ?: "专辑",
+                                text = info?.title ?: t.albums,
                                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 24.sp),
                                 fontWeight = FontWeight.SemiBold,
                                 textAlign = TextAlign.Center
@@ -200,15 +202,15 @@ fun AlbumDetailScreen(
                                     val resolved = viewModel.resolveAlbumCover(info.artist, info.title)
                                     if (resolved != null) {
                                         onlineCover = resolved
-                                        snackbar.showSnackbar("已匹配在线封面")
+                                        snackbar.showSnackbar(t.matchedCoverToast)
                                     } else {
-                                        snackbar.showSnackbar("未找到在线封面")
+                                        snackbar.showSnackbar(t.noOnlineCoverToast)
                                     }
                                 }
                             }) {
                                 Icon(Icons.Rounded.Search, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("在线匹配封面")
+                                Text(t.onlineCover)
                             }
                             Spacer(Modifier.height(8.dp))
                         }
@@ -217,8 +219,8 @@ fun AlbumDetailScreen(
                         item {
                             EmptyState(
                                 icon = Icons.Rounded.PlayArrow,
-                                title = "没有曲目",
-                                body = "这张专辑没有可播放的曲目"
+                                title = t.noTracksTitle,
+                                body = t.noTracksBody
                             )
                         }
                     } else {
@@ -233,16 +235,17 @@ fun AlbumDetailScreen(
                                 isCurrent = isCurrent,
                                 trailing = {
                                     IconButton(onClick = {
-                                        runCommand("已加入队列") { viewModel.queueTrack(track.id) }
+                                        runCommand(t.queueAddedCount) { viewModel.queueTrack(track.id) }
                                     }) {
                                         Icon(
                                             Icons.Rounded.PlaylistAdd,
-                                            contentDescription = "加入队列",
+                                            contentDescription = t.addToQueue,
                                             modifier = Modifier.size(19.dp),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
                                     }
                                 },
+                                onLongClick = { trackForPlaylist = track },
                                 onClick = {
                                     runCommand { viewModel.playTrack(track.id) }
                                 }
@@ -258,6 +261,24 @@ fun AlbumDetailScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
+        )
+    }
+
+    trackForPlaylist?.let { track ->
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = { trackForPlaylist = null },
+            onPick = { playlist ->
+                trackForPlaylist = null
+                runCommand(t.addedToPlaylist) { viewModel.addTrackToPlaylist(playlist.id, track) }
+            },
+            onCreateAndAdd = { name ->
+                trackForPlaylist = null
+                runCommand(t.addedToPlaylist) {
+                    val playlist = viewModel.createCustomPlaylist(name)
+                    viewModel.addTrackToPlaylist(playlist.id, track)
+                }
+            }
         )
     }
 }

@@ -73,6 +73,7 @@ import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import com.daphile.remote.ui.theme.AppTheme
 import com.daphile.remote.ui.theme.colorSchemeFor
+import com.daphile.remote.ui.theme.themeDisplayName
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -134,19 +135,22 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                             Spacer(Modifier.width(12.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = server?.name ?: "尚未添加服务器",
+                                    text = server?.name ?: t.noServerAdded,
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = server?.let { "${it.host}:${it.port}" } ?: "添加 Daphile 主机以开始使用",
+                                    text = server?.let { "${it.host}:${it.port}" } ?: t.addServerHint,
                                     style = MaterialTheme.typography.labelSmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 if (serverInfo != null) {
                                     Text(
-                                        text = "LMS ${serverInfo?.version.orEmpty()} · ${players.size} 个播放器" +
-                                            " · 管理端口 ${server?.daphilePort ?: 80}",
+                                        text = t.serverSummary.format(
+                                            serverInfo?.version.orEmpty(),
+                                            players.size,
+                                            server?.daphilePort ?: 80
+                                        ),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -154,11 +158,11 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                             }
                             Text(
                                 text = when (connection) {
-                                    ConnectionState.Connected -> "在线"
-                                    ConnectionState.Connecting -> "连接中"
-                                    ConnectionState.Reconnecting -> "重连中"
-                                    ConnectionState.Lost -> "不可达"
-                                    else -> "未连接"
+                                    ConnectionState.Connected -> t.online
+                                    ConnectionState.Connecting -> t.connecting
+                                    ConnectionState.Reconnecting -> t.reconnecting
+                                    ConnectionState.Lost -> t.unreachable
+                                    else -> t.notConnected
                                 },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = when (connection) {
@@ -271,7 +275,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             SettingsSectionTitle(t.appearanceSection)
             SettingsRow(
                 title = t.theme,
-                value = themeLabel(settings.theme),
+                value = themeDisplayName(AppTheme.fromKey(settings.theme), t),
                 icon = Icons.Rounded.Palette,
                 onClick = { showThemeDialog = true }
             )
@@ -286,7 +290,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             SettingsRow(
                 title = t.lyricsLibrary,
                 subtitle = viewModel.lyricsLibraryPath(),
-                value = "$lyricsCount 个 .lrc",
+                value = t.lyricsFileCount.format(lyricsCount),
                 icon = Icons.Rounded.Lyrics,
                 onClick = { showClearLyricsDialog = true }
             )
@@ -301,7 +305,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                             context.imageLoader.diskCache?.clear()
                             File(context.cacheDir, "widget_cover.png").delete()
                         }
-                        snackbar.showSnackbar("缓存已清除")
+                        snackbar.showSnackbar(t.cacheCleared)
                     }
                 }
             )
@@ -322,12 +326,12 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             )
             SettingsRow(
                 title = t.hostPower,
-                subtitle = "管理地址 ${server?.daphileBaseUrl ?: "—"}",
+                subtitle = t.manageAddress.format(server?.daphileBaseUrl ?: "—"),
                 showChevron = false
             )
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
                 Text(
-                    text = "重启与挂起使用 Daphile 官方 Web 快捷方式，关机使用 /cgi-bin/Info?ACTION=shutdown；每次操作都需要二次确认。",
+                    text = t.hostPowerHint,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -398,7 +402,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                             ThemeSwatch(theme)
                             Spacer(Modifier.width(10.dp))
                             Text(
-                                text = theme.label,
+                                text = themeDisplayName(theme, t),
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
@@ -489,7 +493,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             onDismissRequest = { showLanguageDialog = false },
             title = { Text(t.language) },
             text = {
-                Column {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     AppLanguage.entries.forEach { option ->
                         Row(
                             modifier = Modifier
@@ -530,7 +534,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
             onDismiss = { powerAction = null },
             onConfirm = {
                 powerAction = null
-                runCommand("指令已下发，服务器即将断开") { viewModel.hostAction(action) }
+                runCommand(t.hostCommandSent) { viewModel.hostAction(action) }
             }
         )
     }
@@ -754,8 +758,6 @@ private fun PowerButton(
         }
     }
 }
-
-private fun themeLabel(theme: String): String = AppTheme.fromKey(theme).label
 
 @Composable
 private fun ThemeSwatch(theme: AppTheme) {

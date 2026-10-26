@@ -218,7 +218,7 @@ fun LyricsScreen(navController: NavController, modifier: Modifier = Modifier) {
                     text = listOfNotNull(track?.title, track?.artist)
                         .filter { it.isNotBlank() }
                         .joinToString(" · ")
-                        .ifBlank { "暂无正在播放的曲目" },
+                        .ifBlank { t.noCurrentTrack },
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

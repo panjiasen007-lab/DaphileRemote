@@ -55,6 +55,7 @@ import com.daphile.remote.data.model.YearItem
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -63,20 +64,21 @@ private const val BROWSE_PAGE = 200
 @Composable
 fun BrowseScreen(navController: NavController, category: String, modifier: Modifier = Modifier) {
     val viewModel: LibraryViewModel = viewModel()
+    val t = strings
     when (category) {
         "artists" -> SimplePagedScreen<Artist>(
             navController = navController,
-            title = "艺术家",
+            title = t.artists,
             modifier = modifier,
             load = viewModel::fetchArtists,
             key = { it.id },
-            emptyTitle = "没有艺术家",
-            emptyBody = "音乐库中尚未扫描到艺术家信息",
+            emptyTitle = t.noArtistsTitle,
+            emptyBody = t.noArtistsBody,
             itemContent = { artist ->
                 SimpleBrowseRow(
                     icon = Icons.Rounded.Person,
                     title = artist.name,
-                    subtitle = "查看专辑",
+                    subtitle = t.viewAlbums,
                     onClick = {
                         navController.navigate(Routes.albums(artist.name, artistId = artist.id))
                     }
@@ -85,17 +87,17 @@ fun BrowseScreen(navController: NavController, category: String, modifier: Modif
         )
         "genres" -> SimplePagedScreen<Genre>(
             navController = navController,
-            title = "流派",
+            title = t.genres,
             modifier = modifier,
             load = viewModel::fetchGenres,
             key = { it.id },
-            emptyTitle = "没有流派",
-            emptyBody = "音乐库中尚未扫描到流派信息",
+            emptyTitle = t.noGenresTitle,
+            emptyBody = t.noGenresBody,
             itemContent = { genre ->
                 SimpleBrowseRow(
                     icon = Icons.Rounded.Folder,
                     title = genre.name,
-                    subtitle = "查看专辑",
+                    subtitle = t.viewAlbums,
                     onClick = {
                         navController.navigate(Routes.albums(genre.name, genreId = genre.id))
                     }
@@ -104,17 +106,17 @@ fun BrowseScreen(navController: NavController, category: String, modifier: Modif
         )
         "years" -> SimplePagedScreen<YearItem>(
             navController = navController,
-            title = "年份",
+            title = t.years,
             modifier = modifier,
             load = viewModel::fetchYears,
             key = { it.year },
-            emptyTitle = "没有年份信息",
-            emptyBody = "音乐库曲目缺少发行年份标签",
+            emptyTitle = t.noYearsTitle,
+            emptyBody = t.noYearsBody,
             itemContent = { year ->
                 SimpleBrowseRow(
                     icon = Icons.Rounded.DateRange,
                     title = year.year,
-                    subtitle = "查看该年份专辑",
+                    subtitle = t.openYear,
                     onClick = {
                         navController.navigate(Routes.albums(year.year, year = year.year))
                     }
@@ -123,17 +125,17 @@ fun BrowseScreen(navController: NavController, category: String, modifier: Modif
         )
         else -> SimplePagedScreen<PlaylistSummary>(
             navController = navController,
-            title = "播放列表",
+            title = t.playlists,
             modifier = modifier,
             load = viewModel::fetchPlaylists,
             key = { it.id },
-            emptyTitle = "没有播放列表",
-            emptyBody = "可在正在播放页把当前队列保存为播放列表",
+            emptyTitle = t.noPlaylistsTitle,
+            emptyBody = t.noPlaylistsBody,
             itemContent = { playlist ->
                 SimpleBrowseRow(
                     icon = Icons.Rounded.PlaylistPlay,
                     title = playlist.name,
-                    subtitle = "打开播放列表",
+                    subtitle = t.openPlaylist,
                     onClick = {
                         navController.navigate(Routes.playlist(playlist.id, playlist.name))
                     }
@@ -161,6 +163,7 @@ private fun <T> SimplePagedScreen(
     var reloadKey by remember { mutableIntStateOf(0) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
+    val t = strings
     val lastVisible by remember {
         derivedStateOf { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
     }
@@ -218,7 +221,7 @@ private fun <T> SimplePagedScreen(
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
             }
@@ -256,7 +259,7 @@ private fun <T> SimplePagedScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 TextButton(onClick = { scope.launch { loadMore() } }) {
-                                    Text("加载更多（${items.size}/$total）")
+                                    Text(t.loadMore.format(items.size, total))
                                 }
                             }
                         }

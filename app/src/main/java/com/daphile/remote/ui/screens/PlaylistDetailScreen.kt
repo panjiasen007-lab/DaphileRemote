@@ -49,6 +49,7 @@ import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.LoadingState
 import com.daphile.remote.ui.common.PageHeader
 import com.daphile.remote.ui.common.TrackRow
+import com.daphile.remote.ui.i18n.strings
 import kotlinx.coroutines.launch
 
 @Composable
@@ -68,6 +69,7 @@ fun PlaylistDetailScreen(
     var reloadKey by remember { mutableIntStateOf(0) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -95,7 +97,7 @@ fun PlaylistDetailScreen(
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = playlistName.ifBlank { "播放列表" },
+                title = playlistName.ifBlank { t.playlists },
                 onBack = { navController.popBackStack() }
             )
             when {
@@ -112,13 +114,13 @@ fun PlaylistDetailScreen(
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
                 tracks.isEmpty() -> EmptyState(
                     icon = Icons.Rounded.PlaylistPlay,
-                    title = "播放列表为空",
-                    body = "这个播放列表没有曲目"
+                    title = t.playlistEmptyTitle,
+                    body = t.playlistEmptyBody
                 )
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
                     item {
@@ -147,12 +149,12 @@ fun PlaylistDetailScreen(
                             Spacer(Modifier.width(14.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = playlistName.ifBlank { "播放列表" },
+                                    text = playlistName.ifBlank { t.playlists },
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold
                                 )
                                 Text(
-                                    text = "${tracks.size} 首曲目",
+                                    text = t.tracksUnit.format(tracks.size),
                                     style = MaterialTheme.typography.labelMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -162,7 +164,7 @@ fun PlaylistDetailScreen(
                             }) {
                                 Icon(Icons.Rounded.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(4.dp))
-                                Text("播放")
+                                Text(t.play)
                             }
                         }
                     }
@@ -175,11 +177,11 @@ fun PlaylistDetailScreen(
                             isCurrent = isCurrent,
                             trailing = {
                                 IconButton(onClick = {
-                                    runCommand("已加入队列") { viewModel.queueTrack(track.id) }
+                                    runCommand(t.queueAddedCount) { viewModel.queueTrack(track.id) }
                                 }) {
                                     Icon(
                                         Icons.Rounded.PlaylistAdd,
-                                        contentDescription = "加入队列",
+                                        contentDescription = t.addToQueue,
                                         modifier = Modifier.size(19.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

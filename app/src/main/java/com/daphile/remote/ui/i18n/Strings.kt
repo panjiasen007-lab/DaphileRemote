@@ -10,6 +10,191 @@ import com.daphile.remote.data.model.AppLanguage
  * 轻量界面文案表。语言可在设置中选择「跟随系统 / 简体中文 / English」。
  * 未覆盖的次要页面暂时保留中文，后续可继续补充键值。
  */
+data class ExtraStrings(
+    val connecting: String,
+    val reconnecting: String,
+    val unreachable: String,
+    val notConnected: String,
+    val connectingDaphile: String,
+    val reconnectingBanner: String,
+    val serverUnreachable: String,
+    val reconnect: String,
+    val noServerAdded: String,
+    val addServerHint: String,
+    val serverSummary: String,
+    val lyricsFileCount: String,
+    val cacheCleared: String,
+    val manageAddress: String,
+    val hostPowerHint: String,
+    val hostCommandSent: String,
+    val copiedToClipboard: String,
+    val copyInfo: String,
+    val deleteServerTitle: String,
+    val deleteServerBody: String,
+    val deleted: String,
+    val edit: String,
+    val delete: String,
+    val switchedTo: String,
+    val discoverHint: String,
+    val connectYourDaphile: String,
+    val editServer: String,
+    val serverIntro: String,
+    val hostRequired: String,
+    val lmsPortRange: String,
+    val daphilePortRange: String,
+    val nameOptional: String,
+    val hostAddressLabel: String,
+    val lmsHttpPort: String,
+    val daphilePortLabel: String,
+    val daphilePortHint: String,
+    val usernameOptional: String,
+    val passwordOptional: String,
+    val passwordHint: String,
+    val hidePassword: String,
+    val showPassword: String,
+    val scanningLan: String,
+    val discoverServers: String,
+    val connectedToLms: String,
+    val connectingServer: String,
+    val testAndSave: String,
+    val serverEditNote: String,
+    val noServersFound: String,
+    val serversFoundCount: String,
+    val noServersFoundBody: String,
+    val playerWithName: String,
+    val poweredOn: String,
+    val poweredOff: String,
+    val turnOnPlayer: String,
+    val daphileHost: String,
+    val hostActionNote: String,
+    val confirmActionTitle: String,
+    val confirmActionBody: String,
+    val confirmActionNote: String,
+    val hostRestart: String,
+    val hostShutdown: String,
+    val hostSuspend: String,
+    val themeSystem: String,
+    val themeDark: String,
+    val themeLight: String,
+    val themeSpring: String,
+    val themeSummer: String,
+    val themeAutumn: String,
+    val themeWinter: String,
+    val themeTaiji: String,
+    val themePanda: String,
+    val qualityStandard: String,
+    val systemInfoCopyTitle: String,
+    val systemInfoCopyServer: String,
+    val systemInfoCopyVersion: String,
+    val systemInfoCopyState: String,
+    val systemInfoCopyPlayers: String,
+    val systemInfoCopyLibrary: String,
+    val systemInfoCopyNetwork: String,
+    val lmsVersion: String,
+    val serverStatus: String,
+    val networkAddress: String,
+    val playerCount: String,
+    val tracks: String,
+    val scanningLibrary: String,
+    val noPlayers: String,
+    val audioOutputScreenTitle: String,
+    val notPlayingTitle: String,
+    val playingState: String,
+    val stoppedState: String,
+    val audioSource: String,
+    val playersAndOutput: String,
+    val realtimeStatus: String,
+    val path: String,
+    val formatLabel: String,
+    val sourceSampleRate: String,
+    val bitDepth: String,
+    val bitRate: String,
+    val channels: String,
+    val lossless: String,
+    val outputDevice: String,
+    val deviceModel: String,
+    val outputEngine: String,
+    val outputSpec: String,
+    val volume: String,
+    val elapsed: String,
+    val totalDuration: String,
+    val queuePosition: String,
+    val dataSource: String,
+    val specSummary: String,
+    val bitDsd: String,
+    val yesValue: String,
+    val noOrUnknown: String,
+    val outputEngineValue: String,
+    val outputSpecDsd: String,
+    val outputSpecAuto: String,
+    val fixedLevel: String,
+    val networkStream: String,
+    val localFile: String,
+    val pathCopied: String,
+    val audioOutputNote: String,
+    val copyAction: String,
+    val seekUnsupported: String,
+    val appShortName: String,
+    val onlineWithModel: String,
+    val playerLabel: String,
+    val remove: String,
+    val scanLibrary: String,
+    val clearInput: String,
+    val scanFinished: String,
+    val recentlyAddedSub: String,
+    val scanDialogBody: String,
+    val scanStartedUpdate: String,
+    val scanUpdate: String,
+    val rebuildStarted: String,
+    val rebuildLibrary: String,
+    val rebuildHint: String,
+    val noSearchResultsTitle: String,
+    val noSearchResultsBody: String,
+    val playingAlbum: String,
+    val noArtistsTitle: String,
+    val noArtistsBody: String,
+    val noGenresTitle: String,
+    val noGenresBody: String,
+    val noYearsTitle: String,
+    val noYearsBody: String,
+    val noPlaylistsTitle: String,
+    val noPlaylistsBody: String,
+    val noContentTitle: String,
+    val noContentBody: String,
+    val musicFolders: String,
+    val playFolder: String,
+    val folderEmptyTitle: String,
+    val folderEmptyBody: String,
+    val browseTitle: String,
+    val noCurrentTrack: String,
+    val matchingLyrics: String,
+    val noLyricsHint: String,
+    val lyricsWithSource: String,
+    val noSongsTitle: String,
+    val noSongsBody: String,
+    val noTracksTitle: String,
+    val noTracksBody: String,
+    val playlistEmptyTitle: String,
+    val playlistEmptyBody: String,
+    val syncApplied: String,
+    val syncCancelled: String,
+    val powerOff: String,
+    val powerOn: String,
+    val syncMaster: String,
+    val independentPlayer: String,
+    val favorites: String,
+    val radios: String,
+    val streamingServices: String,
+    val noRadiosTitle: String,
+    val noRadiosBody: String,
+    val noStreamingTitle: String,
+    val noStreamingBody: String,
+    val favoritesEmptyTitle: String,
+    val favoritesEmptyBody: String,
+    val playAllItems: String,
+    val browseContents: String,
+)
+
 data class UiStrings(
     // 底部导航
     val navNow: String,
@@ -175,6 +360,45 @@ data class UiStrings(
     val nothingToExport: String,
     val lyricsFrom: String,
 
+    // 歌单与每日推荐
+    val myPlaylists: String,
+    val myPlaylistsSub: String,
+    val dailyRecommendation: String,
+    val dailyRecommendationSub: String,
+    val regenerate: String,
+    val createPlaylist: String,
+    val renamePlaylist: String,
+    val deletePlaylist: String,
+    val deletePlaylistTitle: String,
+    val deletePlaylistBody: String,
+    val playlistCreated: String,
+    val playlistRenamed: String,
+    val playlistDeleted: String,
+    val addToPlaylist: String,
+    val newPlaylistName: String,
+    val createAndAdd: String,
+    val noPlaylistsHint: String,
+    val addedToPlaylist: String,
+    val trackCount: String,
+    val saveToMyPlaylists: String,
+    val queueAddedCount: String,
+    val removeFromPlaylist: String,
+    val removedFromPlaylist: String,
+    val emptyPlaylistsTitle: String,
+    val emptyPlaylistsBody: String,
+    val emptyPlaylistTitle: String,
+    val emptyPlaylistBody: String,
+    val emptyDailyTitle: String,
+    val emptyDailyBody: String,
+    val addAllToQueue: String,
+    val allSongsToQueue: String,
+    val allSongsPlayAll: String,
+    val randomToQueue: String,
+    val randomToQueueSub: String,
+    val randomCountTitle: String,
+    val randomCountHint: String,
+    val randomQueued: String,
+
     // 设置
     val settingsTitle: String,
     val serverSection: String,
@@ -231,10 +455,408 @@ data class UiStrings(
     val aboutFeature3: String,
     val aboutFeature4: String,
     val aboutAuthor: String,
-    val aboutLicense: String
+    val aboutLicense: String,
+
+    // 连接状态
+
+    // 电源
+
+    // 主题
+
+    // 音质
+
+    // 系统信息
+
+    // 音频输出
+
+    // 正在播放补充
+
+    // 音乐库补充
+
+    // 浏览
+
+    // 歌词补充
+
+    // 歌曲与歌单
+
+    // 播放器补充
+
+    // 电台与收藏,
+    var extra: ExtraStrings
+) {
+
+    // 扩展文案：委托到 ExtraStrings，避免单个方法参数超过 Android 上限
+    val connecting: String get() = extra.connecting
+    val reconnecting: String get() = extra.reconnecting
+    val unreachable: String get() = extra.unreachable
+    val notConnected: String get() = extra.notConnected
+    val connectingDaphile: String get() = extra.connectingDaphile
+    val reconnectingBanner: String get() = extra.reconnectingBanner
+    val serverUnreachable: String get() = extra.serverUnreachable
+    val reconnect: String get() = extra.reconnect
+    val noServerAdded: String get() = extra.noServerAdded
+    val addServerHint: String get() = extra.addServerHint
+    val serverSummary: String get() = extra.serverSummary
+    val lyricsFileCount: String get() = extra.lyricsFileCount
+    val cacheCleared: String get() = extra.cacheCleared
+    val manageAddress: String get() = extra.manageAddress
+    val hostPowerHint: String get() = extra.hostPowerHint
+    val hostCommandSent: String get() = extra.hostCommandSent
+    val copiedToClipboard: String get() = extra.copiedToClipboard
+    val copyInfo: String get() = extra.copyInfo
+    val deleteServerTitle: String get() = extra.deleteServerTitle
+    val deleteServerBody: String get() = extra.deleteServerBody
+    val deleted: String get() = extra.deleted
+    val edit: String get() = extra.edit
+    val delete: String get() = extra.delete
+    val switchedTo: String get() = extra.switchedTo
+    val discoverHint: String get() = extra.discoverHint
+    val connectYourDaphile: String get() = extra.connectYourDaphile
+    val editServer: String get() = extra.editServer
+    val serverIntro: String get() = extra.serverIntro
+    val hostRequired: String get() = extra.hostRequired
+    val lmsPortRange: String get() = extra.lmsPortRange
+    val daphilePortRange: String get() = extra.daphilePortRange
+    val nameOptional: String get() = extra.nameOptional
+    val hostAddressLabel: String get() = extra.hostAddressLabel
+    val lmsHttpPort: String get() = extra.lmsHttpPort
+    val daphilePortLabel: String get() = extra.daphilePortLabel
+    val daphilePortHint: String get() = extra.daphilePortHint
+    val usernameOptional: String get() = extra.usernameOptional
+    val passwordOptional: String get() = extra.passwordOptional
+    val passwordHint: String get() = extra.passwordHint
+    val hidePassword: String get() = extra.hidePassword
+    val showPassword: String get() = extra.showPassword
+    val scanningLan: String get() = extra.scanningLan
+    val discoverServers: String get() = extra.discoverServers
+    val connectedToLms: String get() = extra.connectedToLms
+    val connectingServer: String get() = extra.connectingServer
+    val testAndSave: String get() = extra.testAndSave
+    val serverEditNote: String get() = extra.serverEditNote
+    val noServersFound: String get() = extra.noServersFound
+    val serversFoundCount: String get() = extra.serversFoundCount
+    val noServersFoundBody: String get() = extra.noServersFoundBody
+    val playerWithName: String get() = extra.playerWithName
+    val poweredOn: String get() = extra.poweredOn
+    val poweredOff: String get() = extra.poweredOff
+    val turnOnPlayer: String get() = extra.turnOnPlayer
+    val daphileHost: String get() = extra.daphileHost
+    val hostActionNote: String get() = extra.hostActionNote
+    val confirmActionTitle: String get() = extra.confirmActionTitle
+    val confirmActionBody: String get() = extra.confirmActionBody
+    val confirmActionNote: String get() = extra.confirmActionNote
+    val hostRestart: String get() = extra.hostRestart
+    val hostShutdown: String get() = extra.hostShutdown
+    val hostSuspend: String get() = extra.hostSuspend
+    val themeSystem: String get() = extra.themeSystem
+    val themeDark: String get() = extra.themeDark
+    val themeLight: String get() = extra.themeLight
+    val themeSpring: String get() = extra.themeSpring
+    val themeSummer: String get() = extra.themeSummer
+    val themeAutumn: String get() = extra.themeAutumn
+    val themeWinter: String get() = extra.themeWinter
+    val themeTaiji: String get() = extra.themeTaiji
+    val themePanda: String get() = extra.themePanda
+    val qualityStandard: String get() = extra.qualityStandard
+    val systemInfoCopyTitle: String get() = extra.systemInfoCopyTitle
+    val systemInfoCopyServer: String get() = extra.systemInfoCopyServer
+    val systemInfoCopyVersion: String get() = extra.systemInfoCopyVersion
+    val systemInfoCopyState: String get() = extra.systemInfoCopyState
+    val systemInfoCopyPlayers: String get() = extra.systemInfoCopyPlayers
+    val systemInfoCopyLibrary: String get() = extra.systemInfoCopyLibrary
+    val systemInfoCopyNetwork: String get() = extra.systemInfoCopyNetwork
+    val lmsVersion: String get() = extra.lmsVersion
+    val serverStatus: String get() = extra.serverStatus
+    val networkAddress: String get() = extra.networkAddress
+    val playerCount: String get() = extra.playerCount
+    val tracks: String get() = extra.tracks
+    val scanningLibrary: String get() = extra.scanningLibrary
+    val noPlayers: String get() = extra.noPlayers
+    val audioOutputScreenTitle: String get() = extra.audioOutputScreenTitle
+    val notPlayingTitle: String get() = extra.notPlayingTitle
+    val playingState: String get() = extra.playingState
+    val stoppedState: String get() = extra.stoppedState
+    val audioSource: String get() = extra.audioSource
+    val playersAndOutput: String get() = extra.playersAndOutput
+    val realtimeStatus: String get() = extra.realtimeStatus
+    val path: String get() = extra.path
+    val formatLabel: String get() = extra.formatLabel
+    val sourceSampleRate: String get() = extra.sourceSampleRate
+    val bitDepth: String get() = extra.bitDepth
+    val bitRate: String get() = extra.bitRate
+    val channels: String get() = extra.channels
+    val lossless: String get() = extra.lossless
+    val outputDevice: String get() = extra.outputDevice
+    val deviceModel: String get() = extra.deviceModel
+    val outputEngine: String get() = extra.outputEngine
+    val outputSpec: String get() = extra.outputSpec
+    val volume: String get() = extra.volume
+    val elapsed: String get() = extra.elapsed
+    val totalDuration: String get() = extra.totalDuration
+    val queuePosition: String get() = extra.queuePosition
+    val dataSource: String get() = extra.dataSource
+    val specSummary: String get() = extra.specSummary
+    val bitDsd: String get() = extra.bitDsd
+    val yesValue: String get() = extra.yesValue
+    val noOrUnknown: String get() = extra.noOrUnknown
+    val outputEngineValue: String get() = extra.outputEngineValue
+    val outputSpecDsd: String get() = extra.outputSpecDsd
+    val outputSpecAuto: String get() = extra.outputSpecAuto
+    val fixedLevel: String get() = extra.fixedLevel
+    val networkStream: String get() = extra.networkStream
+    val localFile: String get() = extra.localFile
+    val pathCopied: String get() = extra.pathCopied
+    val audioOutputNote: String get() = extra.audioOutputNote
+    val copyAction: String get() = extra.copyAction
+    val seekUnsupported: String get() = extra.seekUnsupported
+    val appShortName: String get() = extra.appShortName
+    val onlineWithModel: String get() = extra.onlineWithModel
+    val playerLabel: String get() = extra.playerLabel
+    val remove: String get() = extra.remove
+    val scanLibrary: String get() = extra.scanLibrary
+    val clearInput: String get() = extra.clearInput
+    val scanFinished: String get() = extra.scanFinished
+    val recentlyAddedSub: String get() = extra.recentlyAddedSub
+    val scanDialogBody: String get() = extra.scanDialogBody
+    val scanStartedUpdate: String get() = extra.scanStartedUpdate
+    val scanUpdate: String get() = extra.scanUpdate
+    val rebuildStarted: String get() = extra.rebuildStarted
+    val rebuildLibrary: String get() = extra.rebuildLibrary
+    val rebuildHint: String get() = extra.rebuildHint
+    val noSearchResultsTitle: String get() = extra.noSearchResultsTitle
+    val noSearchResultsBody: String get() = extra.noSearchResultsBody
+    val playingAlbum: String get() = extra.playingAlbum
+    val noArtistsTitle: String get() = extra.noArtistsTitle
+    val noArtistsBody: String get() = extra.noArtistsBody
+    val noGenresTitle: String get() = extra.noGenresTitle
+    val noGenresBody: String get() = extra.noGenresBody
+    val noYearsTitle: String get() = extra.noYearsTitle
+    val noYearsBody: String get() = extra.noYearsBody
+    val noPlaylistsTitle: String get() = extra.noPlaylistsTitle
+    val noPlaylistsBody: String get() = extra.noPlaylistsBody
+    val noContentTitle: String get() = extra.noContentTitle
+    val noContentBody: String get() = extra.noContentBody
+    val musicFolders: String get() = extra.musicFolders
+    val playFolder: String get() = extra.playFolder
+    val folderEmptyTitle: String get() = extra.folderEmptyTitle
+    val folderEmptyBody: String get() = extra.folderEmptyBody
+    val browseTitle: String get() = extra.browseTitle
+    val noCurrentTrack: String get() = extra.noCurrentTrack
+    val matchingLyrics: String get() = extra.matchingLyrics
+    val noLyricsHint: String get() = extra.noLyricsHint
+    val lyricsWithSource: String get() = extra.lyricsWithSource
+    val noSongsTitle: String get() = extra.noSongsTitle
+    val noSongsBody: String get() = extra.noSongsBody
+    val noTracksTitle: String get() = extra.noTracksTitle
+    val noTracksBody: String get() = extra.noTracksBody
+    val playlistEmptyTitle: String get() = extra.playlistEmptyTitle
+    val playlistEmptyBody: String get() = extra.playlistEmptyBody
+    val syncApplied: String get() = extra.syncApplied
+    val syncCancelled: String get() = extra.syncCancelled
+    val powerOff: String get() = extra.powerOff
+    val powerOn: String get() = extra.powerOn
+    val syncMaster: String get() = extra.syncMaster
+    val independentPlayer: String get() = extra.independentPlayer
+    val favorites: String get() = extra.favorites
+    val radios: String get() = extra.radios
+    val streamingServices: String get() = extra.streamingServices
+    val noRadiosTitle: String get() = extra.noRadiosTitle
+    val noRadiosBody: String get() = extra.noRadiosBody
+    val noStreamingTitle: String get() = extra.noStreamingTitle
+    val noStreamingBody: String get() = extra.noStreamingBody
+    val favoritesEmptyTitle: String get() = extra.favoritesEmptyTitle
+    val favoritesEmptyBody: String get() = extra.favoritesEmptyBody
+    val playAllItems: String get() = extra.playAllItems
+    val browseContents: String get() = extra.browseContents
+}
+
+
+private val zhExtra = ExtraStrings(
+    connecting = "连接中",
+    reconnecting = "重连中",
+    unreachable = "不可达",
+    notConnected = "未连接",
+    connectingDaphile = "正在连接 Daphile…",
+    reconnectingBanner = "连接中断，正在重连…",
+    serverUnreachable = "服务器不可达",
+    reconnect = "重新连接",
+    noServerAdded = "尚未添加服务器",
+    addServerHint = "添加 Daphile 主机以开始使用",
+    serverSummary = "LMS %s · %d 个播放器 · 管理端口 %d",
+    lyricsFileCount = "%d 个 .lrc",
+    cacheCleared = "缓存已清除",
+    manageAddress = "管理地址 %s",
+    hostPowerHint = "重启与挂起使用 Daphile 官方 Web 快捷方式，关机使用 /cgi-bin/Info?ACTION=shutdown；每次操作都需要二次确认。",
+    hostCommandSent = "指令已下发，服务器即将断开",
+    copiedToClipboard = "已复制到剪贴板",
+    copyInfo = "复制信息",
+    deleteServerTitle = "删除服务器",
+    deleteServerBody = "删除「%s」？本地保存的凭据与缓存也会一并清除。",
+    deleted = "已删除",
+    edit = "编辑",
+    delete = "删除",
+    switchedTo = "已切换到 %s",
+    discoverHint = "输入 Daphile 主机的 IP 地址，或使用局域网自动发现",
+    connectYourDaphile = "连接你的 Daphile",
+    editServer = "编辑服务器",
+    serverIntro = "输入 Daphile 主机的地址，开始遥控你的数字音频系统。",
+    hostRequired = "请输入主机地址",
+    lmsPortRange = "LMS 端口必须在 1~65535 之间",
+    daphilePortRange = "Daphile 管理端口必须在 1~65535 之间",
+    nameOptional = "名称（可选）",
+    hostAddressLabel = "主机地址（IP 或主机名）",
+    lmsHttpPort = "LMS HTTP 端口",
+    daphilePortLabel = "Daphile 管理端口",
+    daphilePortHint = "用于主机电源与管理页，默认 80",
+    usernameOptional = "用户名（可选）",
+    passwordOptional = "密码（可选）",
+    passwordHint = "留空表示不需要登录",
+    hidePassword = "隐藏密码",
+    showPassword = "显示密码",
+    scanningLan = "正在扫描局域网…",
+    discoverServers = "自动发现局域网服务器",
+    connectedToLms = "连接成功 · LMS %s",
+    connectingServer = "正在连接服务器…",
+    testAndSave = "测试并保存",
+    serverEditNote = "Daphile 默认使用局域网明文 HTTP：LMS 端口 9000，管理端口 80。跨网络访问时请使用 ZeroTier 等 VPN，并注意网络安全。",
+    noServersFound = "未发现服务器",
+    serversFoundCount = "发现 %d 台服务器",
+    noServersFoundBody = "未发现服务器，请手动输入 IP 地址。",
+    playerWithName = "播放器 · %s",
+    poweredOn = "当前已开启",
+    poweredOff = "当前已关闭",
+    turnOnPlayer = "开启播放器",
+    daphileHost = "Daphile 主机",
+    hostActionNote = "主机操作会中断正在播放的音乐，且需要二次确认。",
+    confirmActionTitle = "确认%s",
+    confirmActionBody = "即将对 Daphile 主机（%s）执行「%s」。正在播放的音乐会中断，主机可能在数分钟内不可用。",
+    confirmActionNote = "该操作依赖 Daphile 官方 Web 接口，仅在你确认要操作主机时执行。",
+    hostRestart = "重启主机",
+    hostShutdown = "关闭主机",
+    hostSuspend = "挂起主机",
+    themeSystem = "跟随系统",
+    themeDark = "深色",
+    themeLight = "浅色",
+    themeSpring = "春 · 青芽",
+    themeSummer = "夏 · 碧海",
+    themeAutumn = "秋 · 枫叶",
+    themeWinter = "冬 · 霜雪",
+    themeTaiji = "太极 · 阴阳",
+    themePanda = "熊猫 · 黑白",
+    qualityStandard = "标准",
+    systemInfoCopyTitle = "Daphile Remote 系统信息",
+    systemInfoCopyServer = "服务器: %s (%s:%d)",
+    systemInfoCopyVersion = "LMS 版本: %s",
+    systemInfoCopyState = "状态: %s",
+    systemInfoCopyPlayers = "播放器: %d",
+    systemInfoCopyLibrary = "音乐库: %d 张专辑, %d 首曲目, %d 位艺术家",
+    systemInfoCopyNetwork = "网络: %s:%d",
+    lmsVersion = "LMS 版本",
+    serverStatus = "服务器状态",
+    networkAddress = "网络地址",
+    playerCount = "播放器数量",
+    tracks = "曲目",
+    scanningLibrary = "正在扫描音乐库…",
+    noPlayers = "没有可用播放器",
+    audioOutputScreenTitle = "音频输出",
+    notPlayingTitle = "未在播放",
+    playingState = "正在播放",
+    stoppedState = "已停止",
+    audioSource = "音源",
+    playersAndOutput = "播放器与输出",
+    realtimeStatus = "实时状态",
+    path = "路径",
+    formatLabel = "格式",
+    sourceSampleRate = "源采样率",
+    bitDepth = "位深",
+    bitRate = "码率",
+    channels = "声道",
+    lossless = "无损",
+    outputDevice = "输出设备",
+    deviceModel = "设备型号",
+    outputEngine = "输出引擎",
+    outputSpec = "输出规格",
+    volume = "音量",
+    elapsed = "已播放",
+    totalDuration = "总时长",
+    queuePosition = "队列位置",
+    dataSource = "数据源",
+    specSummary = "规格摘要",
+    bitDsd = "1 bit（DSD）",
+    yesValue = "是",
+    noOrUnknown = "否/未知",
+    outputEngineValue = "Daphile 音频引擎（Squeezelite）",
+    outputSpecDsd = "原生/DoP 由 Daphile 设备设置决定",
+    outputSpecAuto = "Daphile 自动匹配音频设备",
+    fixedLevel = "固定电平 %d",
+    networkStream = "网络流",
+    localFile = "本地文件",
+    pathCopied = "路径已复制",
+    audioOutputNote = "以上为 LMS 返回的实时音频规格。Daphile 负责实际解码与 DAC 输出，输出采样率和 DSD 模式由 Daphile 音频设备设置决定。",
+    copyAction = "复制",
+    seekUnsupported = "当前音源不支持定位",
+    appShortName = "达菲遥控",
+    onlineWithModel = "在线 · %s",
+    playerLabel = "播放器",
+    remove = "移除",
+    scanLibrary = "扫描音乐库",
+    clearInput = "清除",
+    scanFinished = "扫描完成",
+    recentlyAddedSub = "按入库时间查看新专辑",
+    scanDialogBody = "让 Daphile 重新检查音乐目录，更新新增或变更的曲目。",
+    scanStartedUpdate = "已开始扫描",
+    scanUpdate = "扫描更新（推荐）",
+    rebuildStarted = "已开始重建音乐库",
+    rebuildLibrary = "重建音乐库",
+    rebuildHint = "重建会清空索引并重新扫描，可能耗时较长。扫描进度会显示在音乐库页面顶部。",
+    noSearchResultsTitle = "没有找到结果",
+    noSearchResultsBody = "未找到与「%s」相关的内容，试试其他关键词",
+    playingAlbum = "正在播放 %s",
+    noArtistsTitle = "没有艺术家",
+    noArtistsBody = "音乐库中尚未扫描到艺术家信息",
+    noGenresTitle = "没有流派",
+    noGenresBody = "音乐库中尚未扫描到流派信息",
+    noYearsTitle = "没有年份信息",
+    noYearsBody = "音乐库曲目缺少发行年份标签",
+    noPlaylistsTitle = "没有播放列表",
+    noPlaylistsBody = "可在正在播放页把当前队列保存为播放列表",
+    noContentTitle = "这里还没有内容",
+    noContentBody = "请在 Daphile 网页端检查该插件或目录",
+    musicFolders = "音乐文件夹",
+    playFolder = "播放此文件夹",
+    folderEmptyTitle = "文件夹为空",
+    folderEmptyBody = "此目录下没有音乐文件",
+    browseTitle = "浏览",
+    noCurrentTrack = "暂无正在播放的曲目",
+    matchingLyrics = "正在匹配歌词…",
+    noLyricsHint = "暂无歌词\n点按查看歌词页",
+    lyricsWithSource = "歌词 · %s",
+    noSongsTitle = "没有歌曲",
+    noSongsBody = "音乐库中尚未扫描到曲目",
+    noTracksTitle = "没有曲目",
+    noTracksBody = "这张专辑没有可播放的曲目",
+    playlistEmptyTitle = "播放列表为空",
+    playlistEmptyBody = "这个播放列表没有曲目",
+    syncApplied = "同步设置已生效",
+    syncCancelled = "已取消同步",
+    powerOff = "关闭电源",
+    powerOn = "开启电源",
+    syncMaster = "同步主播放器",
+    independentPlayer = "独立播放",
+    favorites = "收藏",
+    radios = "电台",
+    streamingServices = "串流服务",
+    noRadiosTitle = "没有可用电台",
+    noRadiosBody = "请在 Daphile 插件设置中安装电台插件（如 TuneIn）",
+    noStreamingTitle = "没有串流服务",
+    noStreamingBody = "请在 Daphile 插件设置中安装 TIDAL、Qobuz、Spotty 等插件",
+    favoritesEmptyTitle = "收藏夹为空",
+    favoritesEmptyBody = "在正在播放页收藏曲目，或从 Daphile 网页端添加收藏",
+    playAllItems = "全部播放",
+    browseContents = "浏览内容"
 )
 
-private val zh = UiStrings(
+internal val zh = UiStrings(
     navNow = "正在播放",
     navLibrary = "音乐库",
     navRadio = "电台与收藏",
@@ -392,6 +1014,44 @@ private val zh = UiStrings(
     nothingToExport = "暂无歌词可导出",
     lyricsFrom = "歌词来源：%s",
 
+    myPlaylists = "我的歌单",
+    myPlaylistsSub = "保存在本机的自定义歌单",
+    dailyRecommendation = "每日推荐",
+    dailyRecommendationSub = "每天从曲库随机挑选 20 首",
+    regenerate = "重新生成",
+    createPlaylist = "新建歌单",
+    renamePlaylist = "重命名",
+    deletePlaylist = "删除歌单",
+    deletePlaylistTitle = "删除歌单",
+    deletePlaylistBody = "确定删除「%s」？该操作不可撤销。",
+    playlistCreated = "歌单已创建",
+    playlistRenamed = "歌单已重命名",
+    playlistDeleted = "歌单已删除",
+    addToPlaylist = "加入歌单",
+    newPlaylistName = "新歌单名称",
+    createAndAdd = "新建并加入",
+    noPlaylistsHint = "还没有自定义歌单，可在下方新建一个。",
+    addedToPlaylist = "已加入歌单",
+    trackCount = "%d 首",
+    saveToMyPlaylists = "存为我的歌单",
+    queueAddedCount = "已加入队列",
+    removeFromPlaylist = "从歌单移除",
+    removedFromPlaylist = "已从歌单移除",
+    emptyPlaylistsTitle = "还没有歌单",
+    emptyPlaylistsBody = "长按任意歌曲即可加入歌单，也可以在这里新建",
+    emptyPlaylistTitle = "歌单为空",
+    emptyPlaylistBody = "长按歌曲并选择「加入歌单」",
+    emptyDailyTitle = "暂无推荐",
+    emptyDailyBody = "点击右上角刷新即可生成今日推荐",
+    addAllToQueue = "全部加入队列",
+    allSongsToQueue = "所有歌曲加入队列",
+    allSongsPlayAll = "播放全部歌曲",
+    randomToQueue = "随机加入队列",
+    randomToQueueSub = "自定义随机曲目数量（1–200）",
+    randomCountTitle = "随机加入队列",
+    randomCountHint = "输入 1–200 之间的数量",
+    randomQueued = "已随机加入 %d 首",
+
     settingsTitle = "设置",
     serverSection = "服务器",
     serverManage = "服务器管理",
@@ -446,10 +1106,209 @@ private val zh = UiStrings(
     aboutFeature3 = "在线歌词（网易云 / QQ 音乐 / LRCLIB）、导出 .lrc 与本地歌词库",
     aboutFeature4 = "音频输出信息、在线封面匹配、锁屏媒体控制与主机电源管理",
     aboutAuthor = "作者：panjiasen007-lab",
-    aboutLicense = "开源许可：GNU GPL v3.0（GPL-3.0-only）。应用不收集个人数据，服务器信息与凭据仅保存在本机。"
+    aboutLicense = "开源许可：GNU GPL v3.0（GPL-3.0-only）。应用不收集个人数据，服务器信息与凭据仅保存在本机。",
+
+
+
+
+
+
+
+
+
+
+
+
+
+    extra = zhExtra
 )
 
-private val en = UiStrings(
+private val enExtra = ExtraStrings(
+    connecting = "Connecting",
+    reconnecting = "Reconnecting",
+    unreachable = "Unreachable",
+    notConnected = "Not connected",
+    connectingDaphile = "Connecting to Daphile…",
+    reconnectingBanner = "Connection lost, reconnecting…",
+    serverUnreachable = "Server unreachable",
+    reconnect = "Reconnect",
+    noServerAdded = "No server added yet",
+    addServerHint = "Add a Daphile host to get started",
+    serverSummary = "LMS %s · %d players · Admin port %d",
+    lyricsFileCount = "%d .lrc files",
+    cacheCleared = "Cover cache cleared",
+    manageAddress = "Admin address %s",
+    hostPowerHint = "Restart and suspend use Daphile's official web shortcuts; shutdown uses /cgi-bin/Info?ACTION=shutdown. Every action requires confirmation.",
+    hostCommandSent = "Command sent; the server will disconnect shortly",
+    copiedToClipboard = "Copied to clipboard",
+    copyInfo = "Copy Info",
+    deleteServerTitle = "Delete Server",
+    deleteServerBody = "Delete \"%s\"? Locally saved credentials and cache will also be cleared.",
+    deleted = "Deleted",
+    edit = "Edit",
+    delete = "Delete",
+    switchedTo = "Switched to %s",
+    discoverHint = "Enter the Daphile host IP address, or use LAN discovery",
+    connectYourDaphile = "Connect your Daphile",
+    editServer = "Edit Server",
+    serverIntro = "Enter your Daphile host address to start controlling your digital audio system.",
+    hostRequired = "Please enter the host address",
+    lmsPortRange = "The LMS port must be between 1 and 65535",
+    daphilePortRange = "The Daphile admin port must be between 1 and 65535",
+    nameOptional = "Name (optional)",
+    hostAddressLabel = "Host address (IP or hostname)",
+    lmsHttpPort = "LMS HTTP port",
+    daphilePortLabel = "Daphile admin port",
+    daphilePortHint = "Used for host power and admin pages, default 80",
+    usernameOptional = "Username (optional)",
+    passwordOptional = "Password (optional)",
+    passwordHint = "Leave empty if no login is required",
+    hidePassword = "Hide password",
+    showPassword = "Show password",
+    scanningLan = "Scanning your LAN…",
+    discoverServers = "Auto-discover LAN servers",
+    connectedToLms = "Connected · LMS %s",
+    connectingServer = "Connecting to server…",
+    testAndSave = "Test & Save",
+    serverEditNote = "Daphile uses plain HTTP on your LAN by default: LMS port 9000, admin port 80. Use a VPN such as ZeroTier for remote access and stay mindful of network security.",
+    noServersFound = "No servers found",
+    serversFoundCount = "Found %d servers",
+    noServersFoundBody = "No servers found. Please enter the IP address manually.",
+    playerWithName = "Player · %s",
+    poweredOn = "Currently on",
+    poweredOff = "Currently off",
+    turnOnPlayer = "Turn player on",
+    daphileHost = "Daphile host",
+    hostActionNote = "Host actions interrupt playback and require confirmation.",
+    confirmActionTitle = "Confirm %s",
+    confirmActionBody = "The Daphile host (%s) is about to perform \"%s\". Playback will stop and the host may be unavailable for a few minutes.",
+    confirmActionNote = "This relies on the official Daphile web interface and only runs after you confirm.",
+    hostRestart = "Restart host",
+    hostShutdown = "Shutdown host",
+    hostSuspend = "Suspend host",
+    themeSystem = "Follow system",
+    themeDark = "Dark",
+    themeLight = "Light",
+    themeSpring = "Spring · Green Bud",
+    themeSummer = "Summer · Blue Sea",
+    themeAutumn = "Autumn · Maple",
+    themeWinter = "Winter · Frost",
+    themeTaiji = "Taiji · Yin-Yang",
+    themePanda = "Panda · Black & White",
+    qualityStandard = "Standard",
+    systemInfoCopyTitle = "Daphile Remote System Info",
+    systemInfoCopyServer = "Server: %s (%s:%d)",
+    systemInfoCopyVersion = "LMS version: %s",
+    systemInfoCopyState = "Status: %s",
+    systemInfoCopyPlayers = "Players: %d",
+    systemInfoCopyLibrary = "Library: %d albums, %d tracks, %d artists",
+    systemInfoCopyNetwork = "Network: %s:%d",
+    lmsVersion = "LMS version",
+    serverStatus = "Server status",
+    networkAddress = "Network address",
+    playerCount = "Players",
+    tracks = "Tracks",
+    scanningLibrary = "Scanning music library…",
+    noPlayers = "No players available",
+    audioOutputScreenTitle = "Audio Output",
+    notPlayingTitle = "Nothing playing",
+    playingState = "Playing",
+    stoppedState = "Stopped",
+    audioSource = "Audio Source",
+    playersAndOutput = "Players & Output",
+    realtimeStatus = "Live Status",
+    path = "Path",
+    formatLabel = "Format",
+    sourceSampleRate = "Source Sample Rate",
+    bitDepth = "Bit Depth",
+    bitRate = "Bitrate",
+    channels = "Channels",
+    lossless = "Lossless",
+    outputDevice = "Output Device",
+    deviceModel = "Device Model",
+    outputEngine = "Output Engine",
+    outputSpec = "Output Spec",
+    volume = "Volume",
+    elapsed = "Elapsed",
+    totalDuration = "Total Duration",
+    queuePosition = "Queue Position",
+    dataSource = "Data Source",
+    specSummary = "Spec Summary",
+    bitDsd = "1 bit (DSD)",
+    yesValue = "Yes",
+    noOrUnknown = "No / Unknown",
+    outputEngineValue = "Daphile audio engine (Squeezelite)",
+    outputSpecDsd = "Native/DoP is determined by Daphile device settings",
+    outputSpecAuto = "Daphile auto-matches the audio device",
+    fixedLevel = "Fixed level %d",
+    networkStream = "Network stream",
+    localFile = "Local file",
+    pathCopied = "Path copied",
+    audioOutputNote = "These are the live audio specs reported by LMS. Daphile handles decoding and DAC output; the output sample rate and DSD mode are determined by Daphile audio device settings.",
+    copyAction = "Copy",
+    seekUnsupported = "Seeking is not supported for this source",
+    appShortName = "Daphile Remote",
+    onlineWithModel = "Online · %s",
+    playerLabel = "Player",
+    remove = "Remove",
+    scanLibrary = "Scan Music Library",
+    clearInput = "Clear",
+    scanFinished = "Scan complete",
+    recentlyAddedSub = "Browse new albums by date added",
+    scanDialogBody = "Ask Daphile to re-check music folders and update added or changed tracks.",
+    scanStartedUpdate = "Scan started",
+    scanUpdate = "Scan for updates (recommended)",
+    rebuildStarted = "Library rebuild started",
+    rebuildLibrary = "Rebuild Library",
+    rebuildHint = "Rebuilding clears the index and rescans, which may take a while. Progress is shown at the top of the library page.",
+    noSearchResultsTitle = "No results found",
+    noSearchResultsBody = "Nothing found for \"%s\". Try other keywords.",
+    playingAlbum = "Playing %s",
+    noArtistsTitle = "No artists",
+    noArtistsBody = "No artist information has been scanned yet",
+    noGenresTitle = "No genres",
+    noGenresBody = "No genre information has been scanned yet",
+    noYearsTitle = "No year information",
+    noYearsBody = "Library tracks have no release year tags",
+    noPlaylistsTitle = "No playlists",
+    noPlaylistsBody = "Save the current queue as a playlist from the Now Playing page",
+    noContentTitle = "Nothing here yet",
+    noContentBody = "Check this plugin or folder in the Daphile web UI",
+    musicFolders = "Music folders",
+    playFolder = "Play this folder",
+    folderEmptyTitle = "Folder is empty",
+    folderEmptyBody = "No music files in this folder",
+    browseTitle = "Browse",
+    noCurrentTrack = "No track is currently playing",
+    matchingLyrics = "Matching lyrics…",
+    noLyricsHint = "No lyrics\nTap to open the lyrics page",
+    lyricsWithSource = "Lyrics · %s",
+    noSongsTitle = "No songs",
+    noSongsBody = "No tracks have been scanned in the library yet",
+    noTracksTitle = "No tracks",
+    noTracksBody = "This album has no playable tracks",
+    playlistEmptyTitle = "Playlist is empty",
+    playlistEmptyBody = "This playlist has no tracks",
+    syncApplied = "Sync settings applied",
+    syncCancelled = "Sync cancelled",
+    powerOff = "Power off",
+    powerOn = "Power on",
+    syncMaster = "Sync master",
+    independentPlayer = "Independent",
+    favorites = "Favorites",
+    radios = "Radio",
+    streamingServices = "Streaming Services",
+    noRadiosTitle = "No radio available",
+    noRadiosBody = "Install a radio plugin (e.g. TuneIn) in Daphile plugin settings",
+    noStreamingTitle = "No streaming services",
+    noStreamingBody = "Install TIDAL, Qobuz, Spotty or other plugins in Daphile plugin settings",
+    favoritesEmptyTitle = "Favorites is empty",
+    favoritesEmptyBody = "Favorite a track on Now Playing, or add favorites from the Daphile web UI",
+    playAllItems = "Play All",
+    browseContents = "Browse contents"
+)
+
+internal val en = UiStrings(
     navNow = "Now Playing",
     navLibrary = "Library",
     navRadio = "Radio",
@@ -607,6 +1466,44 @@ private val en = UiStrings(
     nothingToExport = "No lyrics to export",
     lyricsFrom = "Source: %s",
 
+    myPlaylists = "My Playlists",
+    myPlaylistsSub = "Custom playlists stored on this device",
+    dailyRecommendation = "Daily Mix",
+    dailyRecommendationSub = "20 random tracks picked from your library every day",
+    regenerate = "Regenerate",
+    createPlaylist = "New Playlist",
+    renamePlaylist = "Rename",
+    deletePlaylist = "Delete Playlist",
+    deletePlaylistTitle = "Delete Playlist",
+    deletePlaylistBody = "Delete \"%s\"? This cannot be undone.",
+    playlistCreated = "Playlist created",
+    playlistRenamed = "Playlist renamed",
+    playlistDeleted = "Playlist deleted",
+    addToPlaylist = "Add to Playlist",
+    newPlaylistName = "New playlist name",
+    createAndAdd = "Create & Add",
+    noPlaylistsHint = "No custom playlists yet. Create one below.",
+    addedToPlaylist = "Added to playlist",
+    trackCount = "%d tracks",
+    saveToMyPlaylists = "Save to My Playlists",
+    queueAddedCount = "Added to queue",
+    removeFromPlaylist = "Remove from playlist",
+    removedFromPlaylist = "Removed from playlist",
+    emptyPlaylistsTitle = "No playlists yet",
+    emptyPlaylistsBody = "Long-press any song to add it, or create one here",
+    emptyPlaylistTitle = "This playlist is empty",
+    emptyPlaylistBody = "Long-press a song and choose \"Add to Playlist\"",
+    emptyDailyTitle = "No recommendation yet",
+    emptyDailyBody = "Tap refresh in the top right to build today's mix",
+    addAllToQueue = "Add All to Queue",
+    allSongsToQueue = "Queue All Songs",
+    allSongsPlayAll = "Play All Songs",
+    randomToQueue = "Random to Queue",
+    randomToQueueSub = "Choose how many random tracks (1–200)",
+    randomCountTitle = "Random to Queue",
+    randomCountHint = "Enter a number between 1 and 200",
+    randomQueued = "Added %d random tracks",
+
     settingsTitle = "Settings",
     serverSection = "Server",
     serverManage = "Server Management",
@@ -661,7 +1558,21 @@ private val en = UiStrings(
     aboutFeature3 = "Online lyrics (NetEase / QQ Music / LRCLIB), .lrc export and local lyrics library",
     aboutFeature4 = "Audio output info, online cover matching, lock screen controls and host power",
     aboutAuthor = "Author: panjiasen007-lab",
-    aboutLicense = "License: GNU GPL v3.0 (GPL-3.0-only). No personal data is collected; server info and credentials stay on this device."
+    aboutLicense = "License: GNU GPL v3.0 (GPL-3.0-only). No personal data is collected; server info and credentials stay on this device.",
+
+
+
+
+
+
+
+
+
+
+
+
+
+    extra = enExtra
 )
 
 val LocalStrings = staticCompositionLocalOf { zh }
@@ -671,24 +1582,53 @@ val strings: UiStrings
     @ReadOnlyComposable
     get() = LocalStrings.current
 
-/** 根据设置与系统语言解析文案表。 */
+/** 解析当前生效的界面语言：固定语言直接使用，auto 时按系统语言匹配。 */
 @Composable
-fun rememberUiStrings(setting: String): UiStrings {
+fun rememberUiLanguage(setting: String): AppLanguage {
     val configuration = LocalConfiguration.current
-    val systemLanguage = configuration.locales[0]?.language.orEmpty()
-    val language = when (AppLanguage.fromKey(setting)) {
-        AppLanguage.ZH -> "zh"
-        AppLanguage.EN -> "en"
-        AppLanguage.AUTO -> if (systemLanguage.startsWith("zh")) "zh" else "en"
+    val chosen = AppLanguage.fromKey(setting)
+    if (chosen != AppLanguage.AUTO) return chosen
+    val locale = configuration.locales[0]
+    val code = locale.language.lowercase()
+    val country = locale.country.uppercase()
+    val script = locale.script
+    return when {
+        code == "zh" && (country == "TW" || country == "HK" || country == "MO" || script == "Hant") ->
+            AppLanguage.ZH_TW
+        code == "zh" -> AppLanguage.ZH
+        else -> AppLanguage.entries.firstOrNull { it.key == code } ?: AppLanguage.EN
     }
-    return if (language == "zh") zh else en
 }
 
-fun languageDisplayName(language: AppLanguage, strings: UiStrings): String = when (language) {
-    AppLanguage.AUTO -> strings.languageAuto
-    AppLanguage.ZH -> strings.languageZh
-    AppLanguage.EN -> strings.languageEn
+/** 根据设置与系统语言解析文案表。 */
+@Composable
+fun rememberUiStrings(setting: String): UiStrings = uiStringsFor(rememberUiLanguage(setting))
+
+internal fun uiStringsFor(language: AppLanguage): UiStrings = when (language) {
+    AppLanguage.ZH -> zh
+    AppLanguage.ZH_TW -> zhTW
+    AppLanguage.EN -> en
+    AppLanguage.JA -> ja
+    AppLanguage.KO -> ko
+    AppLanguage.KO_KP -> koKp
+    AppLanguage.RU -> ru
+    AppLanguage.DE -> de
+    AppLanguage.FR -> fr
+    AppLanguage.ES -> es
+    AppLanguage.IT -> it
+    AppLanguage.PT -> pt
+    AppLanguage.NL -> nl
+    AppLanguage.EL -> el
+    AppLanguage.VI -> vi
+    AppLanguage.TH -> th
+    AppLanguage.AR -> ar
+    AppLanguage.AZ -> az
+    AppLanguage.FA -> fa
+    AppLanguage.AUTO -> en
 }
+
+fun languageDisplayName(language: AppLanguage, strings: UiStrings): String =
+    if (language == AppLanguage.AUTO) strings.languageAuto else language.label
 
 fun lyricsSourceName(source: com.daphile.remote.data.model.LyricsSource, strings: UiStrings): String =
     when (source) {

@@ -1,7 +1,9 @@
 package com.daphile.remote.ui.common
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +46,7 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.daphile.remote.data.model.ConnectionState
 import com.daphile.remote.data.model.Track
+import com.daphile.remote.ui.i18n.strings
 import java.util.Locale
 
 fun formatDuration(seconds: Double): String {
@@ -223,7 +226,7 @@ fun QualityBadge(quality: TrackQuality, modifier: Modifier = Modifier) {
         shape = RoundedCornerShape(4.dp)
     ) {
         Text(
-            text = quality.label,
+            text = if (quality.tier == QualityTier.STANDARD) strings.qualityStandard else quality.label,
             modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp),
             style = MaterialTheme.typography.labelSmall.copy(
                 fontSize = 9.sp,
@@ -322,7 +325,7 @@ fun PageHeader(
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack) {
-                Icon(Icons.Rounded.ArrowBack, contentDescription = "返回")
+                Icon(Icons.Rounded.ArrowBack, contentDescription = strings.back)
             }
         }
         Text(
@@ -402,6 +405,7 @@ fun LoadingState(modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TrackRow(
     track: Track,
@@ -410,7 +414,8 @@ fun TrackRow(
     leadingText: String? = null,
     isCurrent: Boolean = false,
     trailing: (@Composable () -> Unit)? = null,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
 ) {
     val background = if (isCurrent) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
@@ -421,7 +426,7 @@ fun TrackRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(background)
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -457,7 +462,7 @@ fun TrackRow(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = track.title.ifBlank { "未知曲目" },
+                    text = track.title.ifBlank { strings.unknownTrack },
                     modifier = Modifier.weight(1f, fill = false),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
@@ -510,9 +515,9 @@ fun ConnectionBanner(
     if (!hasServer || state == ConnectionState.Connected || state == ConnectionState.Idle) return
     val isLost = state == ConnectionState.Lost
     val text = when (state) {
-        ConnectionState.Connecting -> "正在连接 Daphile…"
-        ConnectionState.Reconnecting -> "连接中断，正在重连…"
-        ConnectionState.Lost -> "服务器不可达"
+        ConnectionState.Connecting -> strings.connectingDaphile
+        ConnectionState.Reconnecting -> strings.reconnectingBanner
+        ConnectionState.Lost -> strings.serverUnreachable
         else -> return
     }
     Surface(
@@ -539,7 +544,7 @@ fun ConnectionBanner(
             Spacer(Modifier.weight(1f))
             if (isLost) {
                 TextButton(onClick = onRetry) {
-                    Text("重新连接")
+                    Text(strings.reconnect)
                 }
             }
         }

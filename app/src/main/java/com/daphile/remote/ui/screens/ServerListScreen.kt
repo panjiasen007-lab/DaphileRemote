@@ -50,6 +50,7 @@ import com.daphile.remote.data.model.ServerConfig
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -62,6 +63,7 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
     var deleteTarget by remember { mutableStateOf<ServerConfig?>(null) }
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
@@ -78,7 +80,7 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = "服务器",
+                title = t.serverSection,
             onBack = if (navController.previousBackStackEntry != null) {
                 { navController.popBackStack() }
             } else null,
@@ -86,7 +88,7 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
                 IconButton(onClick = {
                     navController.navigate(Routes.serverEdit(first = servers.isEmpty()))
                 }) {
-                    Icon(Icons.Rounded.Add, contentDescription = "添加服务器")
+                    Icon(Icons.Rounded.Add, contentDescription = t.addServer)
                 }
             }
         )
@@ -94,9 +96,9 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
         if (servers.isEmpty()) {
             EmptyState(
                 icon = Icons.Rounded.Speaker,
-                title = "还没有添加服务器",
-                body = "输入 Daphile 主机的 IP 地址，或使用局域网自动发现",
-                actionLabel = "添加服务器",
+                title = t.noServerAdded,
+                body = t.discoverHint,
+                actionLabel = t.addServer,
                 onAction = {
                     navController.navigate(Routes.serverEdit(first = servers.isEmpty()))
                 }
@@ -114,7 +116,7 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 if (!isCurrent) {
-                                    runCommand("已切换到 ${server.name}") {
+                                    runCommand(t.switchedTo.format(server.name)) {
                                         viewModel.switchServer(server.id)
                                     }
                                 }
@@ -157,7 +159,7 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
                                             shape = RoundedCornerShape(6.dp)
                                         ) {
                                             Text(
-                                                text = "当前",
+                                                text = t.currentBadge,
                                                 modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.primary
@@ -176,14 +178,14 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
                             }) {
                                 Icon(
                                     Icons.Rounded.Edit,
-                                    contentDescription = "编辑",
+                                    contentDescription = t.edit,
                                     modifier = Modifier.size(19.dp)
                                 )
                             }
                             IconButton(onClick = { deleteTarget = server }) {
                                 Icon(
                                     Icons.Rounded.Delete,
-                                    contentDescription = "删除",
+                                    contentDescription = t.delete,
                                     modifier = Modifier.size(19.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -204,16 +206,16 @@ fun ServerListScreen(navController: NavController, modifier: Modifier = Modifier
     deleteTarget?.let { target ->
         AlertDialog(
             onDismissRequest = { deleteTarget = null },
-            title = { Text("删除服务器") },
-            text = { Text("删除「${target.name}」？本地保存的凭据与缓存也会一并清除。") },
+            title = { Text(t.deleteServerTitle) },
+            text = { Text(t.deleteServerBody.format(target.name)) },
             confirmButton = {
                 TextButton(onClick = {
                     deleteTarget = null
-                    runCommand("已删除") { viewModel.deleteServer(target.id) }
-                }) { Text("删除") }
+                    runCommand(t.deleted) { viewModel.deleteServer(target.id) }
+                }) { Text(t.delete) }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("取消") }
+                TextButton(onClick = { deleteTarget = null }) { Text(t.cancel) }
             }
         )
     }

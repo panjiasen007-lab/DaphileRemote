@@ -32,7 +32,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,15 +51,19 @@ import com.daphile.remote.ui.common.ConnectionBanner
 import com.daphile.remote.ui.i18n.LocalStrings
 import com.daphile.remote.ui.i18n.UiStrings
 import com.daphile.remote.ui.i18n.rememberUiStrings
+import com.daphile.remote.ui.i18n.rememberUiLanguage
 import com.daphile.remote.ui.navigation.Routes
 import com.daphile.remote.ui.screens.AlbumDetailScreen
 import com.daphile.remote.ui.screens.AlbumsScreen
 import com.daphile.remote.ui.screens.AudioOutputScreen
 import com.daphile.remote.ui.screens.BrowseScreen
 import com.daphile.remote.ui.screens.BrowserScreen
+import com.daphile.remote.ui.screens.CustomPlaylistScreen
+import com.daphile.remote.ui.screens.DailyRecommendationScreen
 import com.daphile.remote.ui.screens.FolderBrowserScreen
 import com.daphile.remote.ui.screens.LibraryScreen
 import com.daphile.remote.ui.screens.LyricsScreen
+import com.daphile.remote.ui.screens.MyPlaylistsScreen
 import com.daphile.remote.ui.screens.NowPlayingScreen
 import com.daphile.remote.ui.screens.PlayersScreen
 import com.daphile.remote.ui.screens.PlaylistDetailScreen
@@ -95,6 +101,8 @@ fun DaphileRemoteApp() {
     val dark = resolveThemeDark(appSettings.theme)
     SystemBars(dark = dark)
     val strings = rememberUiStrings(appSettings.language)
+    val language = rememberUiLanguage(appSettings.language)
+    val layoutDirection = if (language.rtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
     if (servers == null) {
         SplashScreen()
@@ -110,7 +118,10 @@ fun DaphileRemoteApp() {
     val showBottomBar = currentRoute in Routes.topLevel
     val tabs = bottomTabs(strings)
 
-    CompositionLocalProvider(LocalStrings provides strings) {
+    CompositionLocalProvider(
+        LocalStrings provides strings,
+        LocalLayoutDirection provides layoutDirection
+    ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -177,7 +188,7 @@ fun DaphileRemoteApp() {
                 composable(
                     route = Routes.ALBUMS,
                     arguments = listOf(
-                        navArgument("title") { defaultValue = "专辑" },
+                        navArgument("title") { defaultValue = strings.albums },
                         navArgument("artistId") { defaultValue = "" },
                         navArgument("genreId") { defaultValue = "" },
                         navArgument("year") { defaultValue = "" },
@@ -186,7 +197,7 @@ fun DaphileRemoteApp() {
                 ) { entry ->
                     AlbumsScreen(
                         navController = navController,
-                        title = entry.arguments?.getString("title") ?: "专辑",
+                        title = entry.arguments?.getString("title") ?: strings.albums,
                         artistId = entry.arguments?.getString("artistId")?.takeIf { it.isNotBlank() },
                         genreId = entry.arguments?.getString("genreId")?.takeIf { it.isNotBlank() },
                         year = entry.arguments?.getString("year")?.takeIf { it.isNotBlank() },
@@ -234,7 +245,7 @@ fun DaphileRemoteApp() {
                         navArgument("source") { type = NavType.StringType },
                         navArgument("pluginCmd") { type = NavType.StringType },
                         navArgument("itemId") { type = NavType.StringType },
-                        navArgument("title") { defaultValue = "浏览" }
+                        navArgument("title") { defaultValue = strings.browseTitle }
                     )
                 ) { entry ->
                     BrowserScreen(
@@ -242,12 +253,23 @@ fun DaphileRemoteApp() {
                         source = entry.arguments?.getString("source").orEmpty(),
                         pluginCmd = entry.arguments?.getString("pluginCmd").orEmpty(),
                         itemId = entry.arguments?.getString("itemId").orEmpty(),
-                        title = entry.arguments?.getString("title") ?: "浏览"
+                        title = entry.arguments?.getString("title") ?: strings.browseTitle
                     )
                 }
 
                 composable(Routes.SYSTEM_INFO) { SystemInfoScreen(navController) }
                 composable(Routes.SONGS) { SongsScreen(navController) }
+                composable(Routes.MY_PLAYLISTS) { MyPlaylistsScreen(navController) }
+                composable(
+                    route = Routes.CUSTOM_PLAYLIST,
+                    arguments = listOf(navArgument("playlistId") { type = NavType.StringType })
+                ) { entry ->
+                    CustomPlaylistScreen(
+                        navController = navController,
+                        playlistId = entry.arguments?.getString("playlistId").orEmpty()
+                    )
+                }
+                composable(Routes.DAILY) { DailyRecommendationScreen(navController) }
                 composable(Routes.FOLDERS) { FolderBrowserScreen(navController) }
                 composable(Routes.LYRICS) { LyricsScreen(navController) }
                 composable(Routes.AUDIO_OUTPUT) { AudioOutputScreen(navController) }

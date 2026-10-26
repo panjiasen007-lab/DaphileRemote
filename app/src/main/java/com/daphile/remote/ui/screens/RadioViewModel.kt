@@ -55,6 +55,8 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun playFavorite(itemId: String) = repository.playFavorite(itemId)
 
+    suspend fun favoritesToQueue(play: Boolean) = repository.favoritesToQueue(play)
+
     suspend fun playItem(pluginCmd: String?, item: BrowserItem) =
         repository.playBrowserItem(pluginCmd, item)
 }

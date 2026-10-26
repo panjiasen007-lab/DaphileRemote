@@ -227,15 +227,15 @@ fun AlbumsScreen(
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
             }
         } else if (items.isEmpty() && !loading) {
             EmptyState(
                 icon = Icons.Rounded.LibraryMusic,
-                title = "没有专辑",
-                body = "当前分类下没有可浏览的专辑"
+                title = t.noAlbumsTitle,
+                body = t.noAlbumsBody
             )
         } else {
             LazyVerticalGrid(
@@ -285,7 +285,7 @@ fun AlbumsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             TextButton(onClick = { scope.launch { loadMore() } }) {
-                                Text("加载更多（${items.size}/$total）")
+                                Text(t.loadMore.format(items.size, total))
                             }
                         }
                     }
@@ -309,20 +309,20 @@ fun AlbumsScreen(
             confirmButton = {
                 TextButton(onClick = {
                     actionAlbum = null
-                    runCommand("正在播放 ${album.title}") { viewModel.playAlbum(album.id) }
-                }) { Text("播放全部") }
+                    runCommand(t.playingAlbum.format(album.title)) { viewModel.playAlbum(album.id) }
+                }) { Text(t.playAll) }
             },
             dismissButton = {
                 Row {
                     TextButton(onClick = {
                         actionAlbum = null
-                        runCommand("已加入队列") { viewModel.queueAlbum(album.id) }
-                    }) { Text("加入队列") }
+                        runCommand(t.queueAddedCount) { viewModel.queueAlbum(album.id) }
+                    }) { Text(t.addToQueue) }
                     TextButton(onClick = {
                         val target = album
                         actionAlbum = null
                         navController.navigate(Routes.album(target.id))
-                    }) { Text("查看") }
+                    }) { Text(t.view) }
                 }
             }
         )

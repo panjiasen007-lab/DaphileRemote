@@ -20,10 +20,12 @@ import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -53,6 +55,7 @@ import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -69,6 +72,7 @@ fun RadioScreen(navController: NavController, modifier: Modifier = Modifier) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
 
     LaunchedEffect(Unit) { viewModel.refresh() }
 
@@ -84,12 +88,12 @@ fun RadioScreen(navController: NavController, modifier: Modifier = Modifier) {
 
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
-            PageHeader(title = "电台与收藏")
+            PageHeader(title = t.navRadio)
             TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = androidx.compose.ui.graphics.Color.Transparent
             ) {
-                listOf("收藏", "电台", "串流服务").forEachIndexed { index, label ->
+                listOf(t.favorites, t.radios, t.streamingServices).forEachIndexed { index, label ->
                     Tab(
                         selected = selectedTab == index,
                         onClick = { selectedTab = index },
@@ -117,7 +121,7 @@ fun RadioScreen(navController: NavController, modifier: Modifier = Modifier) {
                     TextButton(onClick = viewModel::refresh) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
                 else -> when (selectedTab) {
@@ -131,12 +135,18 @@ fun RadioScreen(navController: NavController, modifier: Modifier = Modifier) {
                         },
                         onPlay = { item ->
                             runCommand { viewModel.playFavorite(item.id) }
+                        },
+                        onPlayAll = {
+                            runCommand { viewModel.favoritesToQueue(play = true) }
+                        },
+                        onQueueAll = {
+                            runCommand { viewModel.favoritesToQueue(play = false) }
                         }
                     )
                     1 -> PluginTab(
                         plugins = radios.orEmpty(),
-                        emptyTitle = "没有可用电台",
-                        emptyBody = "请在 Daphile 插件设置中安装电台插件（如 TuneIn）",
+                        emptyTitle = t.noRadiosTitle,
+                        emptyBody = t.noRadiosBody,
                         iconUrl = { icon -> resolveUrl(server?.baseUrl.orEmpty(), icon) },
                         onClick = { plugin ->
                             navController.navigate(
@@ -146,8 +156,8 @@ fun RadioScreen(navController: NavController, modifier: Modifier = Modifier) {
                     )
                     else -> PluginTab(
                         plugins = apps.orEmpty(),
-                        emptyTitle = "没有串流服务",
-                        emptyBody = "请在 Daphile 插件设置中安装 TIDAL、Qobuz、Spotty 等插件",
+                        emptyTitle = t.noStreamingTitle,
+                        emptyBody = t.noStreamingBody,
                         iconUrl = { icon -> resolveUrl(server?.baseUrl.orEmpty(), icon) },
                         onClick = { plugin ->
                             navController.navigate(
@@ -178,13 +188,16 @@ private fun FavoritesTab(
     favorites: List<BrowserItem>,
     serverIconUrl: (String) -> String?,
     onOpenFolder: (BrowserItem) -> Unit,
-    onPlay: (BrowserItem) -> Unit
+    onPlay: (BrowserItem) -> Unit,
+    onPlayAll: () -> Unit,
+    onQueueAll: () -> Unit
 ) {
+    val t = strings
     if (favorites.isEmpty()) {
         EmptyState(
             icon = Icons.Rounded.FavoriteBorder,
-            title = "收藏夹为空",
-            body = "在正在播放页收藏曲目，或从 Daphile 网页端添加收藏"
+            title = t.favoritesEmptyTitle,
+            body = t.favoritesEmptyBody
         )
         return
     }
@@ -198,6 +211,31 @@ private fun FavoritesTab(
         ),
         verticalArrangement = Arrangement.spacedBy(2.dp)
     ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(onClick = onPlayAll, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        Icons.Rounded.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(t.playAllItems)
+                }
+                OutlinedButton(onClick = onQueueAll, modifier = Modifier.weight(1f)) {
+                    Icon(
+                        Icons.Rounded.PlaylistAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(t.addAllToQueue)
+                }
+            }
+        }
         items(items = favorites, key = { it.id }) { item ->
             BrowserItemRow(
                 item = item,
@@ -217,6 +255,7 @@ private fun PluginTab(
     iconUrl: (String) -> String?,
     onClick: (PluginEntry) -> Unit
 ) {
+    val t = strings
     if (plugins.isEmpty()) {
         EmptyState(
             icon = Icons.Rounded.Radio,
@@ -258,7 +297,7 @@ private fun PluginTab(
                         overflow = TextOverflow.Ellipsis
                     )
                     Text(
-                        text = "浏览内容",
+                        text = t.browseContents,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

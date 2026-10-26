@@ -42,6 +42,7 @@ import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.LoadingState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 
@@ -106,13 +107,13 @@ fun BrowserScreen(
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(strings.retry)
                     }
                 }
                 items.isEmpty() -> EmptyState(
                     icon = if (source == "favorites") Icons.Rounded.FavoriteBorder else Icons.Rounded.PlayArrow,
-                    title = "这里还没有内容",
-                    body = "请在 Daphile 网页端检查该插件或目录"
+                    title = strings.noContentTitle,
+                    body = strings.noContentBody
                 )
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),

@@ -71,6 +71,7 @@ fun PlayersScreen(navController: NavController, modifier: Modifier = Modifier) {
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -115,7 +116,7 @@ fun PlayersScreen(navController: NavController, modifier: Modifier = Modifier) {
                             currentTrack = if (isCurrent) nowPlaying?.track?.title.orEmpty() else "",
                             onSelect = {
                                 viewModel.selectPlayer(player.id)
-                                scope.launch { snackbar.showSnackbar("已切换到 ${player.name}") }
+                                scope.launch { snackbar.showSnackbar(t.switchedTo.format(player.name)) }
                             },
                             onPowerToggle = {
                                 runCommand { viewModel.setPower(player.id, !player.power) }
@@ -133,10 +134,10 @@ fun PlayersScreen(navController: NavController, modifier: Modifier = Modifier) {
                                 navController.navigate(Routes.NOW) { launchSingleTop = true }
                             },
                             onSyncTo = { masterId ->
-                                runCommand("同步设置已生效") { viewModel.syncTo(player.id, masterId) }
+                                runCommand(t.syncApplied) { viewModel.syncTo(player.id, masterId) }
                             },
                             onUnsync = {
-                                runCommand("已取消同步") { viewModel.unsync(player.id) }
+                                runCommand(t.syncCancelled) { viewModel.unsync(player.id) }
                             },
                             onVolumeChange = { viewModel.onVolumeChange(player.id, it) },
                             onVolumeFinished = { viewModel.flushVolume(player.id) }
@@ -175,6 +176,7 @@ private fun PlayerCard(
     var syncMenu by remember { mutableStateOf(false) }
     var adjustingVolume by remember { mutableStateOf(false) }
     var volumeValue by remember { mutableFloatStateOf(player.volume.toFloat()) }
+    val t = strings
     LaunchedEffect(player.volume) {
         if (!adjustingVolume) volumeValue = player.volume.toFloat()
     }
@@ -254,7 +256,7 @@ private fun PlayerCard(
                 IconButton(onClick = onPowerToggle, enabled = player.connected) {
                     Icon(
                         imageVector = if (player.connected) Icons.Rounded.PowerSettingsNew else Icons.Rounded.WifiOff,
-                        contentDescription = if (player.power) "关闭电源" else "开启电源",
+                        contentDescription = if (player.power) t.powerOff else t.powerOn,
                         tint = if (player.connected && player.power) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -355,7 +357,7 @@ private fun PlayerCard(
                             players.firstOrNull { it.id == id }?.name
                         }
                         Text(
-                            text = "同步主播放器" + if (names.isNotEmpty()) " · ${names.joinToString("、")}" else "",
+                            text = t.syncMaster + if (names.isNotEmpty()) " · ${names.joinToString("、")}" else "",
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.weight(1f),
@@ -365,7 +367,7 @@ private fun PlayerCard(
                     }
                     else -> {
                         Text(
-                            text = "独立播放",
+                            text = t.independentPlayer,
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f)

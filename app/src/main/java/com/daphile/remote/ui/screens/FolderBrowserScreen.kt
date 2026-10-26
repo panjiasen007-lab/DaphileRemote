@@ -58,6 +58,7 @@ import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.LoadingState
 import com.daphile.remote.ui.common.PageHeader
 import com.daphile.remote.ui.common.TrackRow
+import com.daphile.remote.ui.i18n.strings
 import kotlinx.coroutines.launch
 
 private data class FolderLevel(val id: String?, val name: String)
@@ -67,7 +68,8 @@ fun FolderBrowserScreen(navController: NavController, modifier: Modifier = Modif
     val viewModel: LibraryViewModel = viewModel()
     val server by viewModel.server.collectAsStateWithLifecycle()
     val nowPlaying by viewModel.nowPlaying.collectAsStateWithLifecycle()
-    val levels = remember { mutableStateListOf(FolderLevel(null, "音乐文件夹")) }
+    val t = strings
+    val levels = remember { mutableStateListOf(FolderLevel(null, t.musicFolders)) }
     var items by remember { mutableStateOf<List<BrowserItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
@@ -102,7 +104,7 @@ fun FolderBrowserScreen(navController: NavController, modifier: Modifier = Modif
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = current.name.ifBlank { "文件夹" },
+                title = current.name.ifBlank { t.folders },
                 onBack = {
                     if (levels.size > 1) {
                         levels.removeAt(levels.lastIndex)
@@ -115,11 +117,11 @@ fun FolderBrowserScreen(navController: NavController, modifier: Modifier = Modif
                         IconButton(onClick = {
                             runCommand { viewModel.playFolder(current.id) }
                         }) {
-                            Icon(Icons.Rounded.PlayArrow, contentDescription = "播放此文件夹")
+                            Icon(Icons.Rounded.PlayArrow, contentDescription = t.playFolder)
                         }
                     }
                     IconButton(onClick = { reloadKey++ }) {
-                        Icon(Icons.Rounded.Refresh, contentDescription = "刷新")
+                        Icon(Icons.Rounded.Refresh, contentDescription = t.refresh)
                     }
                 }
             )
@@ -147,13 +149,13 @@ fun FolderBrowserScreen(navController: NavController, modifier: Modifier = Modif
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
                 items.isEmpty() -> EmptyState(
                     icon = Icons.Rounded.Folder,
-                    title = "文件夹为空",
-                    body = "此目录下没有音乐文件"
+                    title = t.folderEmptyTitle,
+                    body = t.folderEmptyBody
                 )
                 else -> LazyColumn(
                     modifier = Modifier.fillMaxSize(),
@@ -178,11 +180,11 @@ fun FolderBrowserScreen(navController: NavController, modifier: Modifier = Modif
                                 isCurrent = isCurrent,
                                 trailing = {
                                     IconButton(onClick = {
-                                        runCommand("已加入队列") { viewModel.queueFolderItem(item) }
+                                        runCommand(t.queueAddedCount) { viewModel.queueFolderItem(item) }
                                     }) {
                                         Icon(
                                             Icons.Rounded.PlaylistAdd,
-                                            contentDescription = "加入队列",
+                                            contentDescription = t.addToQueue,
                                             modifier = Modifier.size(19.dp),
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                                         )
@@ -241,7 +243,7 @@ private fun FolderRow(item: BrowserItem, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = "文件夹",
+                text = strings.folders,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

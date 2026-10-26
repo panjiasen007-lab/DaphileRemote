@@ -271,7 +271,7 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                 },
                 onFavorite = {
                     showMenu = false
-                    runCommand("已加入收藏") { viewModel.addCurrentFavorite() }
+                    runCommand(t.addedToFavorites) { viewModel.addCurrentFavorite() }
                 },
                 onSaveQueue = {
                     showMenu = false
@@ -512,7 +512,7 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
             onDismiss = { showSaveDialog = false },
             onSave = { name ->
                 showSaveDialog = false
-                runCommand("已保存") { viewModel.saveQueue(name) }
+                runCommand(t.saved) { viewModel.saveQueueAsPlaylist(name) }
             }
         )
     }
@@ -536,7 +536,7 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
 
     if (showPowerMenu) {
         PowerCenterDialog(
-            playerName = currentPlayer?.name ?: "播放器",
+            playerName = currentPlayer?.name ?: t.playerLabel,
             playerPowerOn = nowPlaying?.power != false,
             hostAddress = server?.daphileBaseUrl.orEmpty(),
             onDismiss = { showPowerMenu = false },
@@ -560,7 +560,7 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
             onDismiss = { pendingHostAction = null },
             onConfirm = {
                 pendingHostAction = null
-                runCommand("指令已下发，服务器即将断开") {
+                runCommand(t.hostCommandSent) {
                     viewModel.hostPower(action)
                 }
             }
@@ -599,7 +599,7 @@ private fun PlayerTopBar(
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = serverName.ifBlank { "达菲遥控" },
+                text = serverName.ifBlank { t.appShortName },
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -632,7 +632,11 @@ private fun PlayerTopBar(
                                 Column {
                                     Text(player.name)
                                     Text(
-                                        text = if (player.connected) "在线 · ${player.model.ifBlank { "播放器" }}" else "离线",
+                                        text = if (player.connected) {
+                                            t.onlineWithModel.format(player.model.ifBlank { t.playerLabel })
+                                        } else {
+                                            t.offline
+                                        },
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -738,6 +742,7 @@ private fun SeekSection(
 ) {
     var dragging by remember { mutableStateOf(false) }
     var dragValue by remember { mutableFloatStateOf(0f) }
+    val t = strings
     val duration = nowPlaying?.duration?.takeIf { it > 0 } ?: track.duration
     val max = duration.toFloat().coerceAtLeast(1f)
     var displayTime by remember { mutableFloatStateOf((nowPlaying?.time ?: 0.0).toFloat()) }
@@ -793,7 +798,7 @@ private fun SeekSection(
         }
         if (!canSeek) {
             Text(
-                text = "当前音源不支持定位",
+                text = t.seekUnsupported,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1154,7 +1159,7 @@ private fun QueueSheetContent(
                             IconButton(onClick = { onRemove(item.index) }) {
                                 Icon(
                                     Icons.Rounded.Close,
-                                    contentDescription = "移除",
+                                    contentDescription = t.remove,
                                     modifier = Modifier.size(18.dp),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

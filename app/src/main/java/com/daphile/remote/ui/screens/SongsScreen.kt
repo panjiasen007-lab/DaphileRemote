@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +67,9 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
     var loading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
+    val t = strings
+    val playlists by viewModel.customPlaylists.collectAsStateWithLifecycle()
     val lastVisible by remember {
         derivedStateOf { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0 }
     }
@@ -120,9 +124,29 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
-                title = strings.songsTitle,
+                title = t.songsTitle,
                 onBack = { navController.popBackStack() },
-                actions = { Text("$total 首", style = MaterialTheme.typography.labelMedium) }
+                actions = {
+                    Text(t.queueTracks.format(total), style = MaterialTheme.typography.labelMedium)
+                    IconButton(
+                        onClick = { runCommand(t.queueAddedCount) { viewModel.queueAllSongs(play = false) } }
+                    ) {
+                        Icon(
+                            Icons.Rounded.PlaylistAdd,
+                            contentDescription = t.allSongsToQueue,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = { runCommand { viewModel.queueAllSongs(play = true) } }
+                    ) {
+                        Icon(
+                            Icons.Rounded.PlayArrow,
+                            contentDescription = t.allSongsPlayAll,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
             )
             when {
                 errorText != null && items.isEmpty() -> Column(
@@ -137,13 +161,13 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
                     TextButton(onClick = { reloadKey++ }) {
                         Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("重试")
+                        Text(t.retry)
                     }
                 }
                 items.isEmpty() && !loading -> EmptyState(
                     icon = Icons.Rounded.MusicNote,
-                    title = "没有歌曲",
-                    body = "音乐库中尚未扫描到曲目"
+                    title = t.noSongsTitle,
+                    body = t.noSongsBody
                 )
                 else -> LazyColumn(
                     state = listState,
@@ -159,16 +183,17 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
                             isCurrent = isCurrent,
                             trailing = {
                                 IconButton(onClick = {
-                                    runCommand("已加入队列") { viewModel.queueTrack(track.id) }
+                                    runCommand(t.queueAddedCount) { viewModel.queueTrack(track.id) }
                                 }) {
                                     Icon(
                                         Icons.Rounded.PlaylistAdd,
-                                        contentDescription = "加入队列",
+                                        contentDescription = t.addToQueue,
                                         modifier = Modifier.size(19.dp),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             },
+                            onLongClick = { trackForPlaylist = track },
                             onClick = { runCommand { viewModel.playTrack(track.id) } }
                         )
                     }
@@ -191,7 +216,7 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
                                 contentAlignment = Alignment.Center
                             ) {
                                 TextButton(onClick = { scope.launch { loadMore() } }) {
-                                    Text("加载更多（${items.size}/$total）")
+                                    Text(t.loadMore.format(items.size, total))
                                 }
                             }
                         }
@@ -204,6 +229,24 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(16.dp)
+        )
+    }
+
+    trackForPlaylist?.let { track ->
+        AddToPlaylistDialog(
+            playlists = playlists,
+            onDismiss = { trackForPlaylist = null },
+            onPick = { playlist ->
+                trackForPlaylist = null
+                runCommand(t.addedToPlaylist) { viewModel.addTrackToPlaylist(playlist.id, track) }
+            },
+            onCreateAndAdd = { name ->
+                trackForPlaylist = null
+                runCommand(t.addedToPlaylist) {
+                    val playlist = viewModel.createCustomPlaylist(name)
+                    viewModel.addTrackToPlaylist(playlist.id, track)
+                }
+            }
         )
     }
 }

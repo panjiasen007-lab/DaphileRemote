@@ -9,6 +9,8 @@ import com.daphile.remote.data.model.AppLanguage
 import com.daphile.remote.data.model.Artist
 import com.daphile.remote.data.model.BrowserItem
 import com.daphile.remote.data.model.ConnectionState
+import com.daphile.remote.data.model.CustomPlaylist
+import com.daphile.remote.data.model.DailyRecommendation
 import com.daphile.remote.data.model.DiscoveredServer
 import com.daphile.remote.data.model.Genre
 import com.daphile.remote.data.model.HostPowerAction
@@ -59,6 +61,10 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 import java.net.Inet4Address
 import java.net.InetSocketAddress
 import java.net.NetworkInterface
@@ -78,6 +84,12 @@ class DaphileRepository(
 
     val appSettings: StateFlow<AppSettings> =
         settings.appSettings.stateIn(scope, SharingStarted.Eagerly, AppSettings())
+
+    val customPlaylists: StateFlow<List<CustomPlaylist>> =
+        settings.customPlaylists.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    val dailyRecommendation: StateFlow<DailyRecommendation?> =
+        settings.dailyRecommendation.stateIn(scope, SharingStarted.Eagerly, null)
 
     private val _server = MutableStateFlow<ServerConfig?>(null)
     val server: StateFlow<ServerConfig?> = _server.asStateFlow()
@@ -482,6 +494,168 @@ class DaphileRepository(
         val clean = name.trim()
         if (clean.isBlank()) throw LmsException(LmsError.Server, "播放列表名称不能为空")
         sendCurrent("playlist", "save", clean)
+    }
+
+    // ---------- 本机自定义歌单 ----------
+
+    private fun trackKey(track: Track): String = track.id.ifBlank { track.url }
+
+    suspend fun createCustomPlaylist(name: String): CustomPlaylist {
+        val clean = name.trim()
+        if (clean.isBlank()) throw LmsException(LmsError.Server, "歌单名称不能为空")
+        val now = System.currentTimeMillis()
+        val playlist = CustomPlaylist(
+            id = UUID.randomUUID().toString(),
+            name = clean,
+            createdAt = now,
+            updatedAt = now
+        )
+        settings.saveCustomPlaylists(settings.customPlaylists.first() + playlist)
+        return playlist
+    }
+
+    suspend fun renameCustomPlaylist(playlistId: String, name: String) {
+        val clean = name.trim()
+        if (clean.isBlank()) throw LmsException(LmsError.Server, "歌单名称不能为空")
+        val updated = settings.customPlaylists.first().map { playlist ->
+            if (playlist.id == playlistId) {
+                playlist.copy(name = clean, updatedAt = System.currentTimeMillis())
+            } else {
+                playlist
+            }
+        }
+        settings.saveCustomPlaylists(updated)
+    }
+
+    suspend fun deleteCustomPlaylist(playlistId: String) {
+        settings.saveCustomPlaylists(
+            settings.customPlaylists.first().filterNot { it.id == playlistId }
+        )
+    }
+
+    /** 把曲目加入歌单，已存在的同名曲目会跳过；返回实际新增数量。 */
+    suspend fun addTracksToCustomPlaylist(playlistId: String, tracks: List<Track>): Int {
+        if (tracks.isEmpty()) return 0
+        var added = 0
+        val updated = settings.customPlaylists.first().map { playlist ->
+            if (playlist.id != playlistId) return@map playlist
+            val existing = playlist.tracks.map(::trackKey).toMutableSet()
+            val additions = tracks.filter { track ->
+                val key = trackKey(track)
+                key.isNotBlank() && existing.add(key)
+            }
+            added = additions.size
+            playlist.copy(
+                tracks = playlist.tracks + additions,
+                updatedAt = System.currentTimeMillis()
+            )
+        }
+        settings.saveCustomPlaylists(updated)
+        return added
+    }
+
+    suspend fun removeTrackFromCustomPlaylist(playlistId: String, track: Track) {
+        val key = trackKey(track)
+        val updated = settings.customPlaylists.first().map { playlist ->
+            if (playlist.id != playlistId) {
+                playlist
+            } else {
+                playlist.copy(
+                    tracks = playlist.tracks.filterNot { trackKey(it) == key },
+                    updatedAt = System.currentTimeMillis()
+                )
+            }
+        }
+        settings.saveCustomPlaylists(updated)
+    }
+
+    suspend fun saveTracksAsCustomPlaylist(name: String, tracks: List<Track>): CustomPlaylist {
+        if (tracks.isEmpty()) throw LmsException(LmsError.Empty, "队列为空")
+        val clean = name.trim()
+        if (clean.isBlank()) throw LmsException(LmsError.Server, "歌单名称不能为空")
+        val now = System.currentTimeMillis()
+        val unique = tracks.distinctBy(::trackKey)
+        val playlist = CustomPlaylist(
+            id = UUID.randomUUID().toString(),
+            name = clean,
+            tracks = unique,
+            createdAt = now,
+            updatedAt = now
+        )
+        settings.saveCustomPlaylists(settings.customPlaylists.first() + playlist)
+        return playlist
+    }
+
+    suspend fun saveQueueAsCustomPlaylist(name: String): CustomPlaylist =
+        saveTracksAsCustomPlaylist(name, _nowPlaying.value?.queue.orEmpty())
+
+    private suspend fun enqueueTrack(track: Track) {
+        val trackId = track.id
+        when {
+            trackId.toLongOrNull() != null ->
+                sendCurrent("playlistcontrol", "cmd:add", "track_id:$trackId")
+            track.url.isNotBlank() ->
+                sendCurrent("playlist", "add", track.url, track.title.ifBlank { "曲目" })
+        }
+    }
+
+    /** 播放或追加整张歌单；[append] 为 false 时先清空队列再播放。 */
+    suspend fun playCustomPlaylist(playlist: CustomPlaylist, append: Boolean = false) {
+        val tracks = playlist.tracks.filter { it.id.toLongOrNull() != null || it.url.isNotBlank() }
+        if (tracks.isEmpty()) throw LmsException(LmsError.Empty, "歌单为空")
+        if (!append) sendCurrent("playlist", "clear")
+        tracks.forEach { enqueueTrack(it) }
+        if (!append) sendCurrent("play")
+        refreshAfterCommand(queueChanged = true)
+    }
+
+    /** 随机抽取 [count] 首曲目追加到队列，返回实际加入数量。 */
+    suspend fun queueRandomTracks(count: Int): Int {
+        val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
+        val tracks = client.randomTitles(serverConfig, count.coerceIn(1, 200)).items
+        if (tracks.isEmpty()) throw LmsException(LmsError.Empty, "音乐库为空")
+        tracks.forEach { enqueueTrack(it) }
+        refreshAfterCommand(queueChanged = true)
+        return tracks.size
+    }
+
+    /** 把整个音乐库装入队列（[play] 为 true 时立即开始播放）。 */
+    suspend fun queueAllSongs(play: Boolean) {
+        val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
+        val roots = client.musicFolder(serverConfig, null, 0, 50).items
+            .filter { it.hasItems || it.type == "folder" }
+        if (roots.isEmpty()) throw LmsException(LmsError.Empty, "音乐库为空")
+        roots.forEachIndexed { index, item ->
+            sendCurrent(
+                "playlistcontrol",
+                if (index == 0) "cmd:load" else "cmd:add",
+                "folder_id:${item.id}"
+            )
+        }
+        if (play) sendCurrent("play")
+        refreshAfterCommand(queueChanged = true)
+    }
+
+    /** 收藏夹全量播放或追加到队列。 */
+    suspend fun favoritesToQueue(play: Boolean) {
+        sendCurrent("favorites", "playlist", if (play) "play" else "add")
+        if (play) sendCurrent("play")
+        refreshAfterCommand(queueChanged = true)
+    }
+
+    /** 获取每日推荐，同一天复用缓存；[force] 为 true 时重新随机生成。 */
+    suspend fun refreshDailyRecommendation(force: Boolean = false): DailyRecommendation {
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+        val cached = settings.dailyRecommendation.first()
+        if (!force && cached != null && cached.date == today && cached.tracks.isNotEmpty()) {
+            return cached
+        }
+        val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
+        val tracks = client.randomTitles(serverConfig, 20).items
+        if (tracks.isEmpty()) throw LmsException(LmsError.Empty, "音乐库为空")
+        val recommendation = DailyRecommendation(date = today, tracks = tracks)
+        settings.saveDailyRecommendation(recommendation)
+        return recommendation
     }
 
     suspend fun addCurrentFavorite() {

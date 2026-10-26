@@ -28,6 +28,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.daphile.remote.data.model.HostPowerAction
+import com.daphile.remote.ui.i18n.UiStrings
+import com.daphile.remote.ui.i18n.strings
 
 @Composable
 fun PowerCenterDialog(
@@ -38,9 +40,10 @@ fun PowerCenterDialog(
     onTogglePlayerPower: () -> Unit,
     onSelectHostAction: (HostPowerAction) -> Unit
 ) {
+    val t = strings
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("电源控制") },
+        title = { Text(t.power) },
         text = {
             Column {
                 Surface(
@@ -49,13 +52,13 @@ fun PowerCenterDialog(
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().padding(12.dp)) {
                         Text(
-                            text = "播放器 · $playerName",
+                            text = t.playerWithName.format(playerName),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            text = if (playerPowerOn) "当前已开启" else "当前已关闭",
+                            text = if (playerPowerOn) t.poweredOn else t.poweredOff,
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Medium
                         )
@@ -70,14 +73,14 @@ fun PowerCenterDialog(
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(6.dp))
-                            Text(if (playerPowerOn) "关闭播放器" else "开启播放器")
+                            Text(if (playerPowerOn) t.sleepPowerOff else t.turnOnPlayer)
                         }
                     }
                 }
 
                 Spacer(Modifier.height(16.dp))
                 Text(
-                    text = "Daphile 主机",
+                    text = t.daphileHost,
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -93,32 +96,32 @@ fun PowerCenterDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     HostActionButton(
-                        label = "重启",
+                        label = t.reboot,
                         icon = Icons.Rounded.RestartAlt,
                         modifier = Modifier.weight(1f)
                     ) { onSelectHostAction(HostPowerAction.Restart) }
                     HostActionButton(
-                        label = "关机",
+                        label = t.shutdown,
                         icon = Icons.Rounded.PowerSettingsNew,
                         error = true,
                         modifier = Modifier.weight(1f)
                     ) { onSelectHostAction(HostPowerAction.Shutdown) }
                     HostActionButton(
-                        label = "挂起",
+                        label = t.suspend,
                         icon = Icons.Rounded.Settings,
                         modifier = Modifier.weight(1f)
                     ) { onSelectHostAction(HostPowerAction.Suspend) }
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "主机操作会中断正在播放的音乐，且需要二次确认。",
+                    text = t.hostActionNote,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(t.cancel) }
         }
     )
 }
@@ -158,18 +161,20 @@ fun HostPowerConfirmDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
+    val t = strings
+    val actionLabel = hostActionLabel(action, t)
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("确认${action.title}") },
+        title = { Text(t.confirmActionTitle.format(actionLabel)) },
         text = {
             Column {
                 Text(
-                    text = "即将对 Daphile 主机（$hostAddress）执行「${action.title}」。正在播放的音乐会中断，主机可能在数分钟内不可用。",
+                    text = t.confirmActionBody.format(hostAddress, actionLabel),
                     style = MaterialTheme.typography.bodyMedium
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = "该操作依赖 Daphile 官方 Web 接口，仅在你确认要操作主机时执行。",
+                    text = t.confirmActionNote,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -183,11 +188,17 @@ fun HostPowerConfirmDialog(
                     modifier = Modifier.size(16.dp)
                 )
                 Spacer(Modifier.width(6.dp))
-                Text(action.title)
+                Text(actionLabel)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("取消") }
+            TextButton(onClick = onDismiss) { Text(t.cancel) }
         }
     )
+}
+
+private fun hostActionLabel(action: HostPowerAction, t: UiStrings): String = when (action) {
+    HostPowerAction.Restart -> t.hostRestart
+    HostPowerAction.Shutdown -> t.hostShutdown
+    HostPowerAction.Suspend -> t.hostSuspend
 }

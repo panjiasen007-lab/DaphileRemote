@@ -48,6 +48,7 @@ import com.daphile.remote.data.model.ServerConfig
 import com.daphile.remote.data.model.ServerInfo
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -62,6 +63,7 @@ fun ServerEditScreen(
     val viewModel: SettingsViewModel = viewModel()
     val servers by viewModel.servers.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val t = strings
 
     var name by remember { mutableStateOf("") }
     var host by remember { mutableStateOf("") }
@@ -103,17 +105,17 @@ fun ServerEditScreen(
             .removePrefix("https://")
             .trimEnd('/')
         if (cleanHost.isBlank()) {
-            errorText = "请输入主机地址"
+            errorText = t.hostRequired
             return null
         }
         val portValue = port.trim().toIntOrNull()
         if (portValue == null || portValue !in 1..65535) {
-            errorText = "LMS 端口必须在 1~65535 之间"
+            errorText = t.lmsPortRange
             return null
         }
         val daphilePortValue = daphilePort.trim().toIntOrNull()
         if (daphilePortValue == null || daphilePortValue !in 1..65535) {
-            errorText = "Daphile 管理端口必须在 1~65535 之间"
+            errorText = t.daphilePortRange
             return null
         }
         return ServerConfig(
@@ -151,7 +153,7 @@ fun ServerEditScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         PageHeader(
-            title = if (first) "连接你的 Daphile" else if (existing == null) "添加服务器" else "编辑服务器",
+            title = if (first) t.connectYourDaphile else if (existing == null) t.addServer else t.editServer,
             onBack = if (!first && navController.previousBackStackEntry != null) {
                 { navController.popBackStack() }
             } else null
@@ -167,7 +169,7 @@ fun ServerEditScreen(
             if (first) {
                 item {
                     Text(
-                        text = "输入 Daphile 主机的地址，开始遥控你的数字音频系统。",
+                        text = t.serverIntro,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -179,7 +181,7 @@ fun ServerEditScreen(
                     value = name,
                     onValueChange = { name = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("名称（可选）") },
+                    label = { Text(t.nameOptional) },
                     singleLine = true
                 )
                 Spacer(Modifier.height(12.dp))
@@ -187,7 +189,7 @@ fun ServerEditScreen(
                     value = host,
                     onValueChange = { host = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("主机地址（IP 或主机名）") },
+                    label = { Text(t.hostAddressLabel) },
                     placeholder = { Text("192.168.1.100") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
@@ -197,7 +199,7 @@ fun ServerEditScreen(
                     value = port,
                     onValueChange = { port = it.filter { char -> char.isDigit() } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("LMS HTTP 端口") },
+                    label = { Text(t.lmsHttpPort) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
@@ -206,8 +208,8 @@ fun ServerEditScreen(
                     value = daphilePort,
                     onValueChange = { daphilePort = it.filter { char -> char.isDigit() } },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Daphile 管理端口") },
-                    supportingText = { Text("用于主机电源与管理页，默认 80") },
+                    label = { Text(t.daphilePortLabel) },
+                    supportingText = { Text(t.daphilePortHint) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
@@ -216,7 +218,7 @@ fun ServerEditScreen(
                     value = username,
                     onValueChange = { username = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("用户名（可选）") },
+                    label = { Text(t.usernameOptional) },
                     singleLine = true
                 )
                 Spacer(Modifier.height(12.dp))
@@ -224,8 +226,8 @@ fun ServerEditScreen(
                     value = password,
                     onValueChange = { password = it },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("密码（可选）") },
-                    supportingText = { Text("留空表示不需要登录") },
+                    label = { Text(t.passwordOptional) },
+                    supportingText = { Text(t.passwordHint) },
                     singleLine = true,
                     visualTransformation = if (passwordVisible) {
                         VisualTransformation.None
@@ -236,7 +238,7 @@ fun ServerEditScreen(
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
                                 imageVector = if (passwordVisible) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility,
-                                contentDescription = if (passwordVisible) "隐藏密码" else "显示密码"
+                                contentDescription = if (passwordVisible) t.hidePassword else t.showPassword
                             )
                         }
                     }
@@ -266,11 +268,11 @@ fun ServerEditScreen(
                                 strokeWidth = 2.dp
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("正在扫描局域网…")
+                            Text(t.scanningLan)
                         } else {
                             Icon(Icons.Rounded.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("自动发现局域网服务器")
+                            Text(t.discoverServers)
                         }
                     }
                     Spacer(Modifier.height(16.dp))
@@ -285,7 +287,7 @@ fun ServerEditScreen(
                 }
                 if (lastInfo != null) {
                     Text(
-                        text = "连接成功 · LMS ${lastInfo?.version.orEmpty()}",
+                        text = t.connectedToLms.format(lastInfo?.version.orEmpty()),
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.labelMedium
                     )
@@ -303,14 +305,14 @@ fun ServerEditScreen(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("正在连接服务器…")
+                        Text(t.connectingServer)
                     } else {
-                        Text("测试并保存")
+                        Text(t.testAndSave)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "Daphile 默认使用局域网明文 HTTP：LMS 端口 9000，管理端口 80。跨网络访问时请使用 ZeroTier 等 VPN，并注意网络安全。",
+                    text = t.serverEditNote,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -321,10 +323,10 @@ fun ServerEditScreen(
     discovered?.let { list ->
         AlertDialog(
             onDismissRequest = { discovered = null },
-            title = { Text(if (list.isEmpty()) "未发现服务器" else "发现 ${list.size} 台服务器") },
+            title = { Text(if (list.isEmpty()) t.noServersFound else t.serversFoundCount.format(list.size)) },
             text = {
                 if (list.isEmpty()) {
-                    Text("未发现服务器，请手动输入 IP 地址。")
+                    Text(t.noServersFoundBody)
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxWidth()) {
                         items(items = list, key = { it.host }) { server ->
@@ -351,7 +353,7 @@ fun ServerEditScreen(
                 }
             },
             confirmButton = {
-                TextButton(onClick = { discovered = null }) { Text("关闭") }
+                TextButton(onClick = { discovered = null }) { Text(t.close) }
             }
         )
     }

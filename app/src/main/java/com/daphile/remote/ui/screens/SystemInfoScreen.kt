@@ -42,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.daphile.remote.data.model.ConnectionState
 import com.daphile.remote.ui.common.PageHeader
+import com.daphile.remote.ui.i18n.strings
 import kotlinx.coroutines.launch
 
 @Composable
@@ -55,15 +56,36 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
     val clipboard = LocalClipboardManager.current
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val t = strings
+
+    val connectionLabel = when (connection) {
+        ConnectionState.Connected -> t.online
+        ConnectionState.Connecting -> t.connecting
+        ConnectionState.Reconnecting -> t.reconnecting
+        ConnectionState.Lost -> t.unreachable
+        else -> t.notConnected
+    }
 
     val copyText = buildString {
-        appendLine("Daphile Remote 系统信息")
-        appendLine("服务器: ${server?.name.orEmpty()} (${server?.host.orEmpty()}:${server?.port ?: 0})")
-        appendLine("LMS 版本: ${info?.version.orEmpty()}")
-        appendLine("状态: ${connection.name}")
-        appendLine("播放器: ${players.size}")
-        appendLine("音乐库: ${info?.albumCount ?: 0} 张专辑, ${info?.songCount ?: 0} 首曲目, ${info?.artistCount ?: 0} 位艺术家")
-        append("网络: ${info?.ip.orEmpty()}:${info?.httpPort ?: 0}")
+        appendLine(t.systemInfoCopyTitle)
+        appendLine(
+            t.systemInfoCopyServer.format(
+                server?.name.orEmpty(),
+                server?.host.orEmpty(),
+                server?.port ?: 0
+            )
+        )
+        appendLine(t.systemInfoCopyVersion.format(info?.version.orEmpty()))
+        appendLine(t.systemInfoCopyState.format(connectionLabel))
+        appendLine(t.systemInfoCopyPlayers.format(players.size))
+        appendLine(
+            t.systemInfoCopyLibrary.format(
+                info?.albumCount ?: 0,
+                info?.songCount ?: 0,
+                info?.artistCount ?: 0
+            )
+        )
+        append(t.systemInfoCopyNetwork.format(info?.ip.orEmpty(), info?.httpPort ?: 0))
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -72,7 +94,7 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            PageHeader(title = "系统信息", onBack = { navController.popBackStack() })
+            PageHeader(title = t.systemInfo, onBack = { navController.popBackStack() })
             Column(
                 modifier = Modifier.padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -84,7 +106,7 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = server?.name ?: "未连接",
+                            text = server?.name ?: t.notConnected,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -94,19 +116,10 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(Modifier.height(14.dp))
-                        InfoRow("LMS 版本", info?.version.orEmpty().ifBlank { "—" })
-                        InfoRow(
-                            "服务器状态",
-                            when (connection) {
-                                ConnectionState.Connected -> "在线"
-                                ConnectionState.Connecting -> "连接中"
-                                ConnectionState.Reconnecting -> "重连中"
-                                ConnectionState.Lost -> "不可达"
-                                else -> "未连接"
-                            }
-                        )
-                        InfoRow("网络地址", "${info?.ip.orEmpty().ifBlank { "—" }}:${info?.httpPort ?: 0}")
-                        InfoRow("播放器数量", "${players.size}")
+                        InfoRow(t.lmsVersion, info?.version.orEmpty().ifBlank { "—" })
+                        InfoRow(t.serverStatus, connectionLabel)
+                        InfoRow(t.networkAddress, "${info?.ip.orEmpty().ifBlank { "—" }}:${info?.httpPort ?: 0}")
+                        InfoRow(t.playerCount, "${players.size}")
                     }
                 }
 
@@ -117,19 +130,19 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = "音乐库",
+                            text = t.libraryTitle,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(10.dp))
-                        InfoRow("专辑", "${info?.albumCount ?: 0}")
-                        InfoRow("曲目", "${info?.songCount ?: 0}")
-                        InfoRow("艺术家", "${info?.artistCount ?: 0}")
-                        InfoRow("流派", "${info?.genreCount ?: 0}")
+                        InfoRow(t.albums, "${info?.albumCount ?: 0}")
+                        InfoRow(t.tracks, "${info?.songCount ?: 0}")
+                        InfoRow(t.artists, "${info?.artistCount ?: 0}")
+                        InfoRow(t.genres, "${info?.genreCount ?: 0}")
                         if (info?.scanning == true) {
                             Spacer(Modifier.height(6.dp))
                             Text(
-                                text = "正在扫描音乐库…",
+                                text = t.scanningLibrary,
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -144,14 +157,14 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                 ) {
                     Column(modifier = Modifier.padding(18.dp)) {
                         Text(
-                            text = "播放器",
+                            text = t.playersTitle,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.SemiBold
                         )
                         Spacer(Modifier.height(8.dp))
                         if (players.isEmpty()) {
                             Text(
-                                text = "没有可用播放器",
+                                text = t.noPlayers,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -187,7 +200,7 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                                         )
                                     }
                                     Text(
-                                        text = if (player.connected) "在线" else "离线",
+                                        text = if (player.connected) t.online else t.offline,
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (player.connected) {
                                             MaterialTheme.colorScheme.primary
@@ -204,13 +217,13 @@ fun SystemInfoScreen(navController: NavController, modifier: Modifier = Modifier
                 Button(
                     onClick = {
                         clipboard.setText(AnnotatedString(copyText))
-                        scope.launch { snackbar.showSnackbar("已复制到剪贴板") }
+                        scope.launch { snackbar.showSnackbar(t.copiedToClipboard) }
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Rounded.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("复制信息")
+                    Text(t.copyInfo)
                 }
                 Spacer(Modifier.height(28.dp))
             }

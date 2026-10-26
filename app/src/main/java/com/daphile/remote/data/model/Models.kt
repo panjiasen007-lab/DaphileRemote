@@ -113,6 +113,21 @@ data class YearItem(val year: String)
 
 data class PlaylistSummary(val id: String, val name: String)
 
+/** 保存在本机的自定义歌单。服务器端歌单写入接口不可靠，故曲目元数据一并本地保存。 */
+data class CustomPlaylist(
+    val id: String,
+    val name: String,
+    val tracks: List<Track> = emptyList(),
+    val createdAt: Long = 0L,
+    val updatedAt: Long = 0L
+)
+
+/** 每日推荐：同一天复用同一批曲目，可手动重新生成。 */
+data class DailyRecommendation(
+    val date: String = "",
+    val tracks: List<Track> = emptyList()
+)
+
 data class SearchResults(
     val query: String,
     val songs: List<Track> = emptyList(),
@@ -180,7 +195,26 @@ data class AppSettings(
 enum class AppLanguage(val key: String, val label: String) {
     AUTO("auto", "跟随系统"),
     ZH("zh", "简体中文"),
-    EN("en", "English");
+    ZH_TW("zh-TW", "繁體中文"),
+    EN("en", "English"),
+    JA("ja", "日本語"),
+    KO("ko", "한국어"),
+    KO_KP("ko-KP", "조선어"),
+    RU("ru", "Русский"),
+    DE("de", "Deutsch"),
+    FR("fr", "Français"),
+    ES("es", "Español"),
+    IT("it", "Italiano"),
+    PT("pt", "Português"),
+    NL("nl", "Nederlands"),
+    EL("el", "Ελληνικά"),
+    VI("vi", "Tiếng Việt"),
+    TH("th", "ไทย"),
+    AR("ar", "العربية"),
+    AZ("az", "Azərbaycan dili"),
+    FA("fa", "فارسی");
+
+    val rtl: Boolean get() = this == AR || this == FA
 
     companion object {
         fun fromKey(key: String?): AppLanguage = entries.firstOrNull { it.key == key } ?: AUTO

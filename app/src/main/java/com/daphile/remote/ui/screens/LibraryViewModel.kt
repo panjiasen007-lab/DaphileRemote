@@ -4,7 +4,9 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.daphile.remote.DaphileApp
+import com.daphile.remote.data.model.CustomPlaylist
 import com.daphile.remote.data.model.SearchResults
+import com.daphile.remote.data.model.Track
 import com.daphile.remote.data.model.friendlyErrorMessage
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -20,6 +22,8 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     val server = repository.server
     val nowPlaying = repository.nowPlaying
     val scanStatus = repository.scanStatus
+    val customPlaylists = repository.customPlaylists
+    val dailyRecommendation = repository.dailyRecommendation
 
     private val _query = MutableStateFlow("")
     val query = _query.asStateFlow()
@@ -105,6 +109,35 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         repository.playFolderItem(item)
     suspend fun queueFolderItem(item: com.daphile.remote.data.model.BrowserItem) =
         repository.queueFolderItem(item)
+
+    suspend fun createCustomPlaylist(name: String): CustomPlaylist =
+        repository.createCustomPlaylist(name)
+
+    suspend fun renameCustomPlaylist(playlistId: String, name: String) =
+        repository.renameCustomPlaylist(playlistId, name)
+
+    suspend fun deleteCustomPlaylist(playlistId: String) =
+        repository.deleteCustomPlaylist(playlistId)
+
+    suspend fun addTrackToPlaylist(playlistId: String, track: Track): Int =
+        repository.addTracksToCustomPlaylist(playlistId, listOf(track))
+
+    suspend fun saveTracksAsPlaylist(name: String, tracks: List<Track>) =
+        repository.saveTracksAsCustomPlaylist(name, tracks)
+
+    suspend fun saveQueueAsPlaylist(name: String) = repository.saveQueueAsCustomPlaylist(name)
+
+    suspend fun playCustomPlaylist(playlist: CustomPlaylist, append: Boolean = false) =
+        repository.playCustomPlaylist(playlist, append)
+
+    suspend fun removeTrackFromPlaylist(playlist: CustomPlaylist, track: Track) =
+        repository.removeTrackFromCustomPlaylist(playlist.id, track)
+
+    suspend fun queueRandomTracks(count: Int): Int = repository.queueRandomTracks(count)
+
+    suspend fun queueAllSongs(play: Boolean) = repository.queueAllSongs(play)
+
+    suspend fun refreshDaily(force: Boolean = false) = repository.refreshDailyRecommendation(force)
 
     suspend fun startScan(full: Boolean) = repository.startScan(full)
     suspend fun refreshServerInfo() = repository.refreshServerInfo()

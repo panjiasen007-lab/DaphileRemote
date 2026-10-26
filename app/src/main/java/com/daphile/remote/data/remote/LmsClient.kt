@@ -203,6 +203,20 @@ class LmsClient {
             )
         )
 
+    /** 随机抽取 [count] 首曲目（服务端排序，不会重复）。 */
+    suspend fun randomTitles(server: ServerConfig, count: Int): Paged<Track> =
+        LmsParser.parseTracks(
+            request(
+                server,
+                "",
+                listOf(
+                    "titles", "0", count.coerceIn(1, 500).toString(),
+                    "sort:random",
+                    "tags:${LmsParser.TRACK_TAGS}"
+                )
+            )
+        )
+
     suspend fun musicFolder(
         server: ServerConfig,
         parentId: String?,
