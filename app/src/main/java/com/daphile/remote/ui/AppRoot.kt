@@ -72,7 +72,10 @@ import com.daphile.remote.ui.screens.ServerListScreen
 import com.daphile.remote.ui.screens.SettingsScreen
 import com.daphile.remote.ui.screens.SongsScreen
 import com.daphile.remote.ui.screens.SystemInfoScreen
+import com.daphile.remote.ui.theme.AppTheme
+import com.daphile.remote.ui.theme.LocalThemeArt
 import com.daphile.remote.ui.theme.resolveThemeDark
+import com.daphile.remote.ui.theme.themeArtOf
 
 private data class BottomTab(
     val route: String,
@@ -102,6 +105,9 @@ fun DaphileRemoteApp() {
     val strings = rememberUiStrings(appSettings.language)
     // 阿拉伯语、波斯语保持左到右排版，避免整页镜像后布局「倒序」
     val layoutDirection = LayoutDirection.Ltr
+    val themeArt = remember(appSettings.theme, dark) {
+        themeArtOf(AppTheme.fromKey(appSettings.theme), dark)
+    }
 
     if (servers == null) {
         SplashScreen()
@@ -119,7 +125,8 @@ fun DaphileRemoteApp() {
 
     CompositionLocalProvider(
         LocalStrings provides strings,
-        LocalLayoutDirection provides layoutDirection
+        LocalLayoutDirection provides layoutDirection,
+        LocalThemeArt provides themeArt
     ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),

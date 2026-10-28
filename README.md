@@ -13,7 +13,7 @@ An Android remote for Daphile / Lyrion Music Server (LMS 9.x), built with Jetpac
 
 - 应用显示名：达菲遥控
 - 包名：`com.daphile.remote`
-- 当前版本：1.6.1（versionCode 8）
+- 当前版本：1.7.1（versionCode 10）
 - 最低系统：Android 8.0（API 26），目标 API 35
 
 ### 功能
@@ -166,6 +166,8 @@ app/src/main/java/com/daphile/remote/
 
 ### 版本
 
+- 1.7.1：随机播放改为客户端真随机（修复每次随机结果固定、且集中在同一专辑的问题，随机专辑同理）；春/夏/秋/冬/太极/熊猫与深色/浅色主题补齐元素化设计（背景、播放场景、封面外框、进度条各自专属），「跟随系统」按系统明暗沿用深色或浅色画面。
+- 1.7.0：新增中国红·朱门、风·流风、花·繁花、雪·初雪、月·望月五套特别版主题，各自拥有独立背景绘制、播放场景、封面外框与进度条造型；修复语言选择对话框无法滚动。
 - 1.6.1：修复锁屏后歌曲进度不更新（新增 `mediaPlayback` 前台服务承载媒体通知并持有唤醒锁）；取消阿拉伯语、波斯语的整页 RTL 镜像，界面保持左到右排版。
 - 1.6.0：新增本地自定义歌单（新建 / 重命名 / 删除 / 长按歌曲加入 / 队列存为歌单）；每日推荐（每天随机 20 首，可重新生成、存为歌单）；随机 1–200 首加入队列；歌曲页全部入队 / 全部播放；收藏页全部播放 / 全部入队；界面语言扩展至 20 种。
 - 1.5.0：正在播放页原频谱位置改为火柴人对决动画（随播放进度左右推进、四种招式、随主题变色）；静音按钮移至循环按钮右侧；音量严格跟随达菲「音量控制」开关，关闭时禁用调节与静音；设置页新增「关于」卡片与语言选择。
@@ -191,7 +193,7 @@ An Android remote for a Daphile host on your local network: playback control, li
 
 - App label: 达菲遥控 (Daphile Remote)
 - Package: `com.daphile.remote`
-- Current version: 1.6.1 (versionCode 8)
+- Current version: 1.7.1 (versionCode 10)
 - Minimum: Android 8.0 (API 26), target API 35
 
 ### Features
@@ -344,6 +346,8 @@ app/src/main/java/com/daphile/remote/
 
 ### Versions
 
+- 1.7.1: Random playback is now truly random on the client (fixes identical results per call, clustered in one album; random album too); Spring / Summer / Autumn / Winter / Taiji / Panda and the Dark / Light themes now have element-level designs (dedicated backdrop, playback scene, cover frame and slider); "Follow system" reuses the Dark or Light artwork according to the system mode.
+- 1.7.0: Added the China Red, Wind, Flower, Snow and Moon special themes, each with its own backdrop, playback scene, cover frame and slider style; fixed the unscrollable language picker dialog.
 - 1.6.1: Fixed playback progress freezing after the screen locks (added a `mediaPlayback` foreground service hosting the media notification with a wake lock); removed whole-UI RTL mirroring for Arabic and Persian so the layout stays left-to-right.
 - 1.6.0: Local custom playlists (create / rename / delete / long-press to add / save queue as playlist); Daily Recommendations (20 random tracks per day, regenerate, save as playlist); random 1-200 tracks to the queue; add all songs to queue or play all; play all or add all favorites; UI languages expanded to 20.
 - 1.5.0: The former spectrum area on Now Playing became a stick-figure duel animation (advances with playback, four moves, theme colors); mute moved to the right of repeat; volume strictly follows Daphile's volume-control switch; added the About card and language selection in Settings.

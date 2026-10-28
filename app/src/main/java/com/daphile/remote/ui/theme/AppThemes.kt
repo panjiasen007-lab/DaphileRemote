@@ -19,12 +19,18 @@ enum class AppTheme(val key: String, val label: String) {
     Autumn("autumn", "秋 · 枫叶"),
     Winter("winter", "冬 · 霜雪"),
     Taiji("taiji", "太极 · 阴阳"),
-    Panda("panda", "熊猫 · 黑白");
+    Panda("panda", "熊猫 · 黑白"),
+    ChinaRed("china_red", "中国红 · 朱门"),
+    Wind("wind", "风 · 流风"),
+    Flower("flower", "花 · 繁花"),
+    Snow("snow", "雪 · 初雪"),
+    Moon("moon", "月 · 望月");
 
     val isDarkFamily: Boolean
         get() = when (this) {
-            System, Dark, Spring, Taiji, Panda -> true
-            Light, Summer, Autumn, Winter -> false
+            System, Dark, Spring, Taiji, Panda,
+            ChinaRed, Wind, Snow, Moon -> true
+            Light, Summer, Autumn, Winter, Flower -> false
         }
 
     companion object {
@@ -43,6 +49,11 @@ fun themeDisplayName(theme: AppTheme, strings: UiStrings): String = when (theme)
     AppTheme.Winter -> strings.themeWinter
     AppTheme.Taiji -> strings.themeTaiji
     AppTheme.Panda -> strings.themePanda
+    AppTheme.ChinaRed -> strings.themeChinaRed
+    AppTheme.Wind -> strings.themeWind
+    AppTheme.Flower -> strings.themeFlower
+    AppTheme.Snow -> strings.themeSnow
+    AppTheme.Moon -> strings.themeMoon
 }
 
 private fun scheme(
@@ -281,6 +292,176 @@ private val PandaLight = scheme(
     tertiary = Color(0xFF6F9E52)
 )
 
+/** 中国红·朱门：朱红为墙，金为线，墨为影。 */
+private val ChinaRedDark = scheme(
+    dark = true,
+    primary = Color(0xFFE23B4A),
+    secondary = Color(0xFFD4AF37),
+    background = Color(0xFF120A0B),
+    surface = Color(0xFF1B0F11),
+    surfaceVariant = Color(0xFF2A1618),
+    onBackground = Color(0xFFF8E9E4),
+    onSurfaceVariant = Color(0xFFC9A9A4),
+    outline = Color(0xFF4A2A2C),
+    primaryContainer = Color(0xFF5E1119),
+    onPrimaryContainer = Color(0xFFFFD9DC),
+    onPrimary = Color(0xFF2A0508),
+    tertiary = Color(0xFFE9C46A)
+)
+
+/** 中国红·宣纸朱印：宣纸底、朱砂印。 */
+private val ChinaRedLight = scheme(
+    dark = false,
+    primary = Color(0xFFB3122B),
+    secondary = Color(0xFF8C6A1F),
+    background = Color(0xFFFBF4EC),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFF2E4D8),
+    onBackground = Color(0xFF2A1214),
+    onSurfaceVariant = Color(0xFF6B4A44),
+    outline = Color(0xFFE2CDBB),
+    primaryContainer = Color(0xFFFAD9DC),
+    onPrimaryContainer = Color(0xFF4A0C14),
+    onPrimary = Color.White,
+    tertiary = Color(0xFFC8A24A)
+)
+
+/** 风·夜风：夜墨蓝底，雾青流线。 */
+private val WindDark = scheme(
+    dark = true,
+    primary = Color(0xFFA8C6C9),
+    secondary = Color(0xFF6E8B9B),
+    background = Color(0xFF0B1620),
+    surface = Color(0xFF111F2B),
+    surfaceVariant = Color(0xFF1A2E3C),
+    onBackground = Color(0xFFE6F1F5),
+    onSurfaceVariant = Color(0xFF97AEBB),
+    outline = Color(0xFF2C4250),
+    primaryContainer = Color(0xFF1E3A48),
+    onPrimaryContainer = Color(0xFFD6F0F7),
+    onPrimary = Color(0xFF08151E),
+    tertiary = Color(0xFFD9E6E8)
+)
+
+/** 风·晨风：纸白底，淡青风痕。 */
+private val WindLight = scheme(
+    dark = false,
+    primary = Color(0xFF3D6B7E),
+    secondary = Color(0xFF6E8B9B),
+    background = Color(0xFFF3F6F7),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE1EBEE),
+    onBackground = Color(0xFF0E1B22),
+    onSurfaceVariant = Color(0xFF4E6570),
+    outline = Color(0xFFC9D9DE),
+    primaryContainer = Color(0xFFD3E7EC),
+    onPrimaryContainer = Color(0xFF06262F),
+    onPrimary = Color.White,
+    tertiary = Color(0xFF7FA3B2)
+)
+
+/** 花·夜樱：梅底粉樱。 */
+private val FlowerDark = scheme(
+    dark = true,
+    primary = Color(0xFFF0A9BC),
+    secondary = Color(0xFFE8A0B4),
+    background = Color(0xFF201318),
+    surface = Color(0xFF2A1B21),
+    surfaceVariant = Color(0xFF38252C),
+    onBackground = Color(0xFFFBEDF0),
+    onSurfaceVariant = Color(0xFFC9A8B0),
+    outline = Color(0xFF4A3138),
+    primaryContainer = Color(0xFF4A2431),
+    onPrimaryContainer = Color(0xFFFFD9E3),
+    onPrimary = Color(0xFF2A0E17),
+    tertiary = Color(0xFFA8C79F)
+)
+
+/** 花·晨花：奶白底，藕粉花瓣。 */
+private val FlowerLight = scheme(
+    dark = false,
+    primary = Color(0xFFC25A78),
+    secondary = Color(0xFF7FA679),
+    background = Color(0xFFFFF8F6),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFF7E6E8),
+    onBackground = Color(0xFF2A151A),
+    onSurfaceVariant = Color(0xFF6E4E56),
+    outline = Color(0xFFEAD2D6),
+    primaryContainer = Color(0xFFFBDDE4),
+    onPrimaryContainer = Color(0xFF3E0E1C),
+    onPrimary = Color.White,
+    tertiary = Color(0xFFE8A0B4)
+)
+
+/** 雪·夜雪：夜蓝底，霜白落雪。 */
+private val SnowDark = scheme(
+    dark = true,
+    primary = Color(0xFFA9C7DE),
+    secondary = Color(0xFFBFE9F2),
+    background = Color(0xFF0A1420),
+    surface = Color(0xFF101C2A),
+    surfaceVariant = Color(0xFF182838),
+    onBackground = Color(0xFFEDF6FF),
+    onSurfaceVariant = Color(0xFFA0B7C8),
+    outline = Color(0xFF2C4152),
+    primaryContainer = Color(0xFF1E3548),
+    onPrimaryContainer = Color(0xFFDCEEFF),
+    onPrimary = Color(0xFF06121C),
+    tertiary = Color(0xFFF4F9FF)
+)
+
+/** 雪·晴雪：晴空下的雪原。 */
+private val SnowLight = scheme(
+    dark = false,
+    primary = Color(0xFF2F6C92),
+    secondary = Color(0xFF5A8CB2),
+    background = Color(0xFFF4F9FF),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFE2EFF8),
+    onBackground = Color(0xFF0B1822),
+    onSurfaceVariant = Color(0xFF4E6272),
+    outline = Color(0xFFC7DBEA),
+    primaryContainer = Color(0xFFD6EAF8),
+    onPrimaryContainer = Color(0xFF042736),
+    onPrimary = Color.White,
+    tertiary = Color(0xFF8FB3CC)
+)
+
+/** 月·夜色：深靛夜空，淡金月光。 */
+private val MoonDark = scheme(
+    dark = true,
+    primary = Color(0xFFD9C58A),
+    secondary = Color(0xFFC9CEDA),
+    background = Color(0xFF0B0F1C),
+    surface = Color(0xFF121A2B),
+    surfaceVariant = Color(0xFF1B2437),
+    onBackground = Color(0xFFEAE6DA),
+    onSurfaceVariant = Color(0xFFA8AFC0),
+    outline = Color(0xFF2C3650),
+    primaryContainer = Color(0xFF26314C),
+    onPrimaryContainer = Color(0xFFF0EAD8),
+    onPrimary = Color(0xFF0B0F1C),
+    tertiary = Color(0xFF8FA4C8)
+)
+
+/** 月·晓月：月白底，残月银灰。 */
+private val MoonLight = scheme(
+    dark = false,
+    primary = Color(0xFF7A6A3A),
+    secondary = Color(0xFF5A6780),
+    background = Color(0xFFFBFAF5),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFEFEDE2),
+    onBackground = Color(0xFF16171F),
+    onSurfaceVariant = Color(0xFF555B68),
+    outline = Color(0xFFD9D5C6),
+    primaryContainer = Color(0xFFEDE6CE),
+    onPrimaryContainer = Color(0xFF32290E),
+    onPrimary = Color.White,
+    tertiary = Color(0xFF4E5E80)
+)
+
 private val DarkScheme = darkColorScheme(
     primary = Teal,
     onPrimary = Color(0xFF04110F),
@@ -326,6 +507,11 @@ internal fun colorSchemeFor(theme: AppTheme, dark: Boolean): ColorScheme = when 
     AppTheme.Winter -> if (dark) WinterDark else WinterLight
     AppTheme.Taiji -> if (dark) TaijiDark else TaijiLight
     AppTheme.Panda -> if (dark) PandaDark else PandaLight
+    AppTheme.ChinaRed -> if (dark) ChinaRedDark else ChinaRedLight
+    AppTheme.Wind -> if (dark) WindDark else WindLight
+    AppTheme.Flower -> if (dark) FlowerDark else FlowerLight
+    AppTheme.Snow -> if (dark) SnowDark else SnowLight
+    AppTheme.Moon -> if (dark) MoonDark else MoonLight
     AppTheme.Light -> LightScheme
     AppTheme.Dark, AppTheme.System -> if (dark) DarkScheme else LightScheme
 }

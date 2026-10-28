@@ -29,6 +29,7 @@ import org.json.JSONObject
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 class LmsClient {
     private val jsonMedia = "application/json; charset=utf-8".toMediaType()
@@ -216,6 +217,47 @@ class LmsClient {
                 )
             )
         )
+
+    /**
+     * 真随机抽取 [count] 首曲目。
+     *
+     * LMS 的 `sort:random` 在同一会话内给出的顺序是固定的，重复调用会得到相同结果；
+     * 这里先读取曲库总数，再由客户端在曲库中随机选取多个起点、分段取样后去重打乱，
+     * 因此每次调用结果都不同，且不会集中在某一个连续区间（同一张专辑）。
+     */
+    suspend fun randomTracks(server: ServerConfig, count: Int): List<Track> {
+        val target = count.coerceIn(1, 500)
+        val total = songs(server, 0, 0).total
+        if (total <= 0) return emptyList()
+        if (total <= target) return songs(server, 0, total).items.shuffled()
+
+        val chunk = ((target + 11) / 12).coerceAtLeast(1)
+        val pool = LinkedHashMap<String, Track>()
+        var attempts = 0
+        while (pool.size < target && attempts < 48) {
+            val start = Random.nextInt(0, total - chunk + 1)
+            songs(server, start, chunk).items.forEach { track ->
+                pool.putIfAbsent(randomKey(track), track)
+            }
+            attempts++
+        }
+        if (pool.size < target) {
+            randomTitles(server, target * 2).items.forEach { track ->
+                if (pool.size < target) pool.putIfAbsent(randomKey(track), track)
+            }
+        }
+        return pool.values.shuffled().take(target)
+    }
+
+    /** 真随机抽一张专辑（曲库总数为 0 时返回 null）。 */
+    suspend fun randomAlbum(server: ServerConfig): Album? {
+        val total = albums(server, 0, 0, "album").total
+        if (total <= 0) return null
+        return albums(server, Random.nextInt(total), 1, "album").items.firstOrNull()
+    }
+
+    private fun randomKey(track: Track): String =
+        track.id.ifBlank { track.url.ifBlank { "${track.album}|${track.title}" } }
 
     suspend fun musicFolder(
         server: ServerConfig,

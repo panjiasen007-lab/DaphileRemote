@@ -612,7 +612,7 @@ class DaphileRepository(
     /** 随机抽取 [count] 首曲目追加到队列，返回实际加入数量。 */
     suspend fun queueRandomTracks(count: Int): Int {
         val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
-        val tracks = client.randomTitles(serverConfig, count.coerceIn(1, 200)).items
+        val tracks = client.randomTracks(serverConfig, count.coerceIn(1, 200))
         if (tracks.isEmpty()) throw LmsException(LmsError.Empty, "音乐库为空")
         tracks.forEach { enqueueTrack(it) }
         refreshAfterCommand(queueChanged = true)
@@ -651,7 +651,7 @@ class DaphileRepository(
             return cached
         }
         val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
-        val tracks = client.randomTitles(serverConfig, 20).items
+        val tracks = client.randomTracks(serverConfig, 20)
         if (tracks.isEmpty()) throw LmsException(LmsError.Empty, "音乐库为空")
         val recommendation = DailyRecommendation(date = today, tracks = tracks)
         settings.saveDailyRecommendation(recommendation)
@@ -763,8 +763,7 @@ class DaphileRepository(
 
     suspend fun randomAlbum() {
         val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
-        val albums = client.albums(serverConfig, 0, 1, "random")
-        val album = albums.items.firstOrNull() ?: throw LmsException(LmsError.Empty, "音乐库为空")
+        val album = client.randomAlbum(serverConfig) ?: throw LmsException(LmsError.Empty, "音乐库为空")
         playAlbum(album.id)
     }
 

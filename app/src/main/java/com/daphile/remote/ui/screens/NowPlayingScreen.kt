@@ -122,8 +122,13 @@ import com.daphile.remote.ui.common.LyricSpotlight
 import com.daphile.remote.ui.common.PulseRing
 import com.daphile.remote.ui.common.QualityBadge
 import com.daphile.remote.ui.common.SpecChip
-import com.daphile.remote.ui.common.SpinningVinyl
-import com.daphile.remote.ui.common.StickFightScene
+import com.daphile.remote.ui.common.ThemeBackdrop
+import com.daphile.remote.ui.common.ThemeScene
+import com.daphile.remote.ui.common.ThemedCover
+import com.daphile.remote.ui.common.ThemedSeekBar
+import com.daphile.remote.ui.theme.LocalThemeArt
+import com.daphile.remote.ui.theme.ThemeBackdropKind
+import com.daphile.remote.ui.theme.ThemeSliderStyle
 import com.daphile.remote.ui.common.TrackRow
 import com.daphile.remote.ui.common.displayArtist
 import com.daphile.remote.ui.common.formatDuration
@@ -227,6 +232,12 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
         }
     }
     val lyricsData = lyrics
+    val themeArt = LocalThemeArt.current
+    val playProgress = if ((nowPlaying?.duration ?: 0.0) > 0) {
+        (positionMs / 1000f / (nowPlaying?.duration ?: 1.0)).toFloat().coerceIn(0f, 1f)
+    } else {
+        0f
+    }
     val lyricIndex = remember(lyricsData, positionMs) {
         if (lyricsData?.synced == true && lyricsData.lines.isNotEmpty()) {
             lyricsData.lines.indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0)
@@ -236,10 +247,19 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
     }
 
     Box(modifier.fillMaxSize()) {
-        PulsingBackdrop(
-            accent = MaterialTheme.colorScheme.primary,
-            active = nowPlaying?.isPlaying == true
-        )
+        if (themeArt.backdrop == ThemeBackdropKind.Pulse) {
+            PulsingBackdrop(
+                accent = MaterialTheme.colorScheme.primary,
+                active = nowPlaying?.isPlaying == true
+            )
+        } else {
+            ThemeBackdrop(
+                kind = themeArt.backdrop,
+                accent = MaterialTheme.colorScheme.primary,
+                active = nowPlaying?.isPlaying == true,
+                progress = playProgress
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -296,11 +316,13 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 val vinylSize = 196.dp
-                SpinningVinyl(
+                ThemedCover(
                     coverUrl = coverUrl,
                     playing = nowPlaying?.isPlaying == true,
-                    modifier = Modifier.size(vinylSize),
-                    accent = MaterialTheme.colorScheme.primary
+                    style = themeArt.cover,
+                    progress = playProgress,
+                    accent = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(vinylSize)
                 )
                 Spacer(Modifier.width(12.dp))
                 LyricSpotlight(
@@ -315,18 +337,14 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
             }
 
             Spacer(Modifier.height(8.dp))
-            StickFightScene(
-                progress = if ((nowPlaying?.duration ?: 0.0) > 0) {
-                    (positionMs / 1000f / (nowPlaying?.duration ?: 1.0)).toFloat()
-                } else {
-                    0f
-                },
+            ThemeScene(
+                kind = themeArt.scene,
+                progress = playProgress,
                 playing = nowPlaying?.isPlaying == true,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
             )
-
             Spacer(Modifier.height(4.dp))
             if (track != null) {
                 SeekSection(
@@ -765,24 +783,46 @@ private fun SeekSection(
     val value = if (dragging) dragValue else displayTime.coerceIn(0f, max)
     val canSeek = nowPlaying?.canSeek != false
 
+    val sliderStyle = LocalThemeArt.current.slider
     Column(modifier = Modifier.fillMaxWidth()) {
-        Slider(
-            value = value,
-            onValueChange = {
-                if (canSeek) {
-                    dragging = true
-                    dragValue = it
+        if (sliderStyle == ThemeSliderStyle.Default) {
+            Slider(
+                value = value,
+                onValueChange = {
+                    if (canSeek) {
+                        dragging = true
+                        dragValue = it
+                    }
+                },
+                onValueChangeFinished = {
+                    if (dragging) {
+                        dragging = false
+                        onSeek(dragValue.toDouble())
+                    }
+                },
+                valueRange = 0f..max,
+                enabled = canSeek
+            )
+        } else {
+            ThemedSeekBar(
+                value = value,
+                max = max,
+                style = sliderStyle,
+                enabled = canSeek,
+                onValueChange = {
+                    if (canSeek) {
+                        dragging = true
+                        dragValue = it
+                    }
+                },
+                onValueChangeFinished = {
+                    if (dragging) {
+                        dragging = false
+                        onSeek(dragValue.toDouble())
+                    }
                 }
-            },
-            onValueChangeFinished = {
-                if (dragging) {
-                    dragging = false
-                    onSeek(dragValue.toDouble())
-                }
-            },
-            valueRange = 0f..max,
-            enabled = canSeek
-        )
+            )
+        }
         Row(modifier = Modifier.fillMaxWidth()) {
             Text(
                 text = formatDuration(if (dragging) dragValue.toDouble() else value.toDouble()),

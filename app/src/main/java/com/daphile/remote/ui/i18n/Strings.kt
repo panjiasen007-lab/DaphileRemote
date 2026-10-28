@@ -82,6 +82,11 @@ data class ExtraStrings(
     val themeWinter: String,
     val themeTaiji: String,
     val themePanda: String,
+    val themeChinaRed: String,
+    val themeWind: String,
+    val themeFlower: String,
+    val themeSnow: String,
+    val themeMoon: String,
     val qualityStandard: String,
     val systemInfoCopyTitle: String,
     val systemInfoCopyServer: String,
@@ -557,6 +562,11 @@ data class UiStrings(
     val themeWinter: String get() = extra.themeWinter
     val themeTaiji: String get() = extra.themeTaiji
     val themePanda: String get() = extra.themePanda
+    val themeChinaRed: String get() = extra.themeChinaRed
+    val themeWind: String get() = extra.themeWind
+    val themeFlower: String get() = extra.themeFlower
+    val themeSnow: String get() = extra.themeSnow
+    val themeMoon: String get() = extra.themeMoon
     val qualityStandard: String get() = extra.qualityStandard
     val systemInfoCopyTitle: String get() = extra.systemInfoCopyTitle
     val systemInfoCopyServer: String get() = extra.systemInfoCopyServer
@@ -743,6 +753,11 @@ private val zhExtra = ExtraStrings(
     themeWinter = "冬 · 霜雪",
     themeTaiji = "太极 · 阴阳",
     themePanda = "熊猫 · 黑白",
+    themeChinaRed = "中国红 · 朱门",
+    themeWind = "风 · 流风",
+    themeFlower = "花 · 繁花",
+    themeSnow = "雪 · 初雪",
+    themeMoon = "月 · 望月",
     qualityStandard = "标准",
     systemInfoCopyTitle = "Daphile Remote 系统信息",
     systemInfoCopyServer = "服务器: %s (%s:%d)",
@@ -1195,6 +1210,11 @@ private val enExtra = ExtraStrings(
     themeWinter = "Winter · Frost",
     themeTaiji = "Taiji · Yin-Yang",
     themePanda = "Panda · Black & White",
+    themeChinaRed = "China Red · Vermilion Gate",
+    themeWind = "Wind · Drifting Breeze",
+    themeFlower = "Flower · Full Bloom",
+    themeSnow = "Snow · First Snow",
+    themeMoon = "Moon · Gazing Moon",
     qualityStandard = "Standard",
     systemInfoCopyTitle = "Daphile Remote System Info",
     systemInfoCopyServer = "Server: %s (%s:%d)",
