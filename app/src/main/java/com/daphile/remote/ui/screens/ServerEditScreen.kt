@@ -47,6 +47,7 @@ import com.daphile.remote.data.model.DiscoveredServer
 import com.daphile.remote.data.model.ServerConfig
 import com.daphile.remote.data.model.ServerInfo
 import com.daphile.remote.data.model.friendlyErrorMessage
+import com.daphile.remote.data.remote.WolClient
 import com.daphile.remote.ui.common.PageHeader
 import com.daphile.remote.ui.i18n.strings
 import com.daphile.remote.ui.navigation.Routes
@@ -72,6 +73,7 @@ fun ServerEditScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var macAddress by remember { mutableStateOf("") }
     var initialized by remember { mutableStateOf(false) }
 
     var saving by remember { mutableStateOf(false) }
@@ -95,6 +97,7 @@ fun ServerEditScreen(
             daphilePort = existing.daphilePort.toString()
             username = existing.username
             password = existing.password
+            macAddress = existing.macAddress
             initialized = true
         }
     }
@@ -118,6 +121,12 @@ fun ServerEditScreen(
             errorText = t.daphilePortRange
             return null
         }
+        val macInput = macAddress.trim()
+        val normalizedMac = if (macInput.isBlank()) "" else WolClient.normalizeMac(macInput)
+        if (normalizedMac == null) {
+            errorText = t.wolInvalidMac
+            return null
+        }
         return ServerConfig(
             id = existing?.id ?: UUID.randomUUID().toString(),
             name = name.trim().ifBlank { cleanHost },
@@ -126,17 +135,18 @@ fun ServerEditScreen(
             daphilePort = daphilePortValue,
             username = username.trim(),
             password = password,
-            useHttps = existing?.useHttps ?: false
+            useHttps = existing?.useHttps ?: false,
+            macAddress = normalizedMac
         )
     }
 
-    fun save() {
+    fun save(skipTest: Boolean = false) {
         val config = buildConfig() ?: return
         errorText = null
         saving = true
         scope.launch {
             try {
-                lastInfo = viewModel.testServer(config)
+                if (!skipTest) lastInfo = viewModel.testServer(config)
                 viewModel.saveServer(config)
                 if (first) {
                     navController.navigate(Routes.NOW) { launchSingleTop = true }
@@ -243,6 +253,18 @@ fun ServerEditScreen(
                         }
                     }
                 )
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = macAddress,
+                    onValueChange = { input ->
+                        macAddress = input.filter { it.isLetterOrDigit() || it == ':' || it == '-' }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text(t.wolMacLabel) },
+                    placeholder = { Text("AA:BB:CC:DD:EE:FF") },
+                    supportingText = { Text(t.wolMacHint) },
+                    singleLine = true
+                )
                 Spacer(Modifier.height(16.dp))
                 if (existing == null) {
                     OutlinedButton(
@@ -309,6 +331,13 @@ fun ServerEditScreen(
                     } else {
                         Text(t.testAndSave)
                     }
+                }
+                TextButton(
+                    onClick = { save(skipTest = true) },
+                    enabled = !saving && !discovering,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(t.saveWithoutTest)
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(

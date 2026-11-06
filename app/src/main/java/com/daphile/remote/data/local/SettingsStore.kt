@@ -45,6 +45,7 @@ class SettingsStore(
         val lockScreenControls = booleanPreferencesKey("lock_screen_controls")
         val lyricsSource = stringPreferencesKey("lyrics_source")
         val language = stringPreferencesKey("app_language")
+        val autoWake = booleanPreferencesKey("auto_wake")
         val customPlaylists = stringPreferencesKey("custom_playlists")
         val dailyRecommendation = stringPreferencesKey("daily_recommendation")
         fun playerFor(serverId: String) = stringPreferencesKey("player_$serverId")
@@ -75,7 +76,8 @@ class SettingsStore(
             onlineMetadataEnabled = preferences[Keys.onlineMetadata] ?: true,
             lockScreenControls = preferences[Keys.lockScreenControls] ?: true,
             lyricsSource = preferences[Keys.lyricsSource] ?: "auto",
-            language = preferences[Keys.language] ?: "auto"
+            language = preferences[Keys.language] ?: "auto",
+            autoWake = preferences[Keys.autoWake] ?: false
         )
     }
 
@@ -159,6 +161,10 @@ class SettingsStore(
 
     suspend fun setLanguage(languageKey: String) {
         context.settingsDataStore.edit { it[Keys.language] = languageKey }
+    }
+
+    suspend fun setAutoWake(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.autoWake] = enabled }
     }
 
     val customPlaylists: Flow<List<CustomPlaylist>> = safeData.map { preferences ->
@@ -313,7 +319,8 @@ class SettingsStore(
                             daphilePort = item.optInt("daphilePort", 80),
                             username = item.optString("username"),
                             password = password,
-                            useHttps = item.optBoolean("useHttps", false)
+                            useHttps = item.optBoolean("useHttps", false),
+                            macAddress = item.optString("macAddress")
                         )
                     )
                 }
@@ -336,6 +343,7 @@ class SettingsStore(
                     .put("username", server.username)
                     .put("password", crypto.encrypt(server.password))
                     .put("useHttps", server.useHttps)
+                    .put("macAddress", server.macAddress)
             )
         }
         return array.toString()

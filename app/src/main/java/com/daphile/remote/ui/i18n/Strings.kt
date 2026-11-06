@@ -27,6 +27,17 @@ data class ExtraStrings(
     val manageAddress: String,
     val hostPowerHint: String,
     val hostCommandSent: String,
+    val wol: String,
+    val wolHint: String,
+    val wolMacLabel: String,
+    val wolMacHint: String,
+    val wolInvalidMac: String,
+    val wolMacMissing: String,
+    val wolWaking: String,
+    val wolOnline: String,
+    val wolTimeout: String,
+    val wolAuto: String,
+    val wolAutoHint: String,
     val copiedToClipboard: String,
     val copyInfo: String,
     val deleteServerTitle: String,
@@ -57,6 +68,7 @@ data class ExtraStrings(
     val connectedToLms: String,
     val connectingServer: String,
     val testAndSave: String,
+    val saveWithoutTest: String,
     val serverEditNote: String,
     val noServersFound: String,
     val serversFoundCount: String,
@@ -507,6 +519,17 @@ data class UiStrings(
     val manageAddress: String get() = extra.manageAddress
     val hostPowerHint: String get() = extra.hostPowerHint
     val hostCommandSent: String get() = extra.hostCommandSent
+    val wol: String get() = extra.wol
+    val wolHint: String get() = extra.wolHint
+    val wolMacLabel: String get() = extra.wolMacLabel
+    val wolMacHint: String get() = extra.wolMacHint
+    val wolInvalidMac: String get() = extra.wolInvalidMac
+    val wolMacMissing: String get() = extra.wolMacMissing
+    val wolWaking: String get() = extra.wolWaking
+    val wolOnline: String get() = extra.wolOnline
+    val wolTimeout: String get() = extra.wolTimeout
+    val wolAuto: String get() = extra.wolAuto
+    val wolAutoHint: String get() = extra.wolAutoHint
     val copiedToClipboard: String get() = extra.copiedToClipboard
     val copyInfo: String get() = extra.copyInfo
     val deleteServerTitle: String get() = extra.deleteServerTitle
@@ -537,6 +560,7 @@ data class UiStrings(
     val connectedToLms: String get() = extra.connectedToLms
     val connectingServer: String get() = extra.connectingServer
     val testAndSave: String get() = extra.testAndSave
+    val saveWithoutTest: String get() = extra.saveWithoutTest
     val serverEditNote: String get() = extra.serverEditNote
     val noServersFound: String get() = extra.noServersFound
     val serversFoundCount: String get() = extra.serversFoundCount
@@ -698,6 +722,17 @@ private val zhExtra = ExtraStrings(
     manageAddress = "管理地址 %s",
     hostPowerHint = "重启与挂起使用 Daphile 官方 Web 快捷方式，关机使用 /cgi-bin/Info?ACTION=shutdown；每次操作都需要二次确认。",
     hostCommandSent = "指令已下发，服务器即将断开",
+    wol = "网络唤醒",
+    wolHint = "主机需在 BIOS 与网卡中开启网络唤醒（WOL），并与手机处于同一局域网。",
+    wolMacLabel = "MAC 地址（可选）",
+    wolMacHint = "网卡的 MAC 地址，用于关机后远程开机，例如 AA:BB:CC:DD:EE:FF。",
+    wolInvalidMac = "MAC 地址格式不正确",
+    wolMacMissing = "未填写 MAC 地址，无法网络唤醒，请编辑当前服务器并填写 MAC 地址。",
+    wolWaking = "已发送唤醒包，正在等待主机启动…",
+    wolOnline = "主机已上线",
+    wolTimeout = "主机未在 90 秒内响应，请检查 MAC 地址与网络唤醒设置",
+    wolAuto = "连接失败时自动唤醒",
+    wolAutoHint = "无法连接主机时自动发送唤醒包并等待开机，需先填写 MAC 地址。",
     copiedToClipboard = "已复制到剪贴板",
     copyInfo = "复制信息",
     deleteServerTitle = "删除服务器",
@@ -728,6 +763,7 @@ private val zhExtra = ExtraStrings(
     connectedToLms = "连接成功 · LMS %s",
     connectingServer = "正在连接服务器…",
     testAndSave = "测试并保存",
+    saveWithoutTest = "仅保存（不测试连接）",
     serverEditNote = "Daphile 默认使用局域网明文 HTTP：LMS 端口 9000，管理端口 80。跨网络访问时请使用 ZeroTier 等 VPN，并注意网络安全。",
     noServersFound = "未发现服务器",
     serversFoundCount = "发现 %d 台服务器",
@@ -1155,6 +1191,17 @@ private val enExtra = ExtraStrings(
     manageAddress = "Admin address %s",
     hostPowerHint = "Restart and suspend use Daphile's official web shortcuts; shutdown uses /cgi-bin/Info?ACTION=shutdown. Every action requires confirmation.",
     hostCommandSent = "Command sent; the server will disconnect shortly",
+    wol = "Wake-on-LAN",
+    wolHint = "Enable Wake-on-LAN in the host BIOS and NIC, and keep the phone on the same LAN.",
+    wolMacLabel = "MAC address (optional)",
+    wolMacHint = "NIC MAC address used to power the host on remotely, e.g. AA:BB:CC:DD:EE:FF.",
+    wolInvalidMac = "Invalid MAC address format",
+    wolMacMissing = "No MAC address configured; edit the current server and fill in its MAC address.",
+    wolWaking = "Magic packet sent, waiting for the host to boot…",
+    wolOnline = "Host is online",
+    wolTimeout = "Host did not respond within 90 seconds; check the MAC address and Wake-on-LAN settings.",
+    wolAuto = "Auto wake when offline",
+    wolAutoHint = "Sends a magic packet automatically while the host is unreachable and waits for it to boot. Requires a MAC address.",
     copiedToClipboard = "Copied to clipboard",
     copyInfo = "Copy Info",
     deleteServerTitle = "Delete Server",
@@ -1185,6 +1232,7 @@ private val enExtra = ExtraStrings(
     connectedToLms = "Connected · LMS %s",
     connectingServer = "Connecting to server…",
     testAndSave = "Test & Save",
+    saveWithoutTest = "Save without test",
     serverEditNote = "Daphile uses plain HTTP on your LAN by default: LMS port 9000, admin port 80. Use a VPN such as ZeroTier for remote access and stay mindful of network security.",
     noServersFound = "No servers found",
     serversFoundCount = "Found %d servers",

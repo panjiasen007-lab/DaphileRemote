@@ -14,6 +14,7 @@ import com.daphile.remote.data.model.DailyRecommendation
 import com.daphile.remote.data.model.DiscoveredServer
 import com.daphile.remote.data.model.Genre
 import com.daphile.remote.data.model.HostPowerAction
+import com.daphile.remote.data.model.WakeState
 import com.daphile.remote.data.model.LmsError
 import com.daphile.remote.data.model.LmsException
 import com.daphile.remote.data.model.Lyrics
@@ -34,6 +35,7 @@ import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.data.online.OnlineMetadataService
 import com.daphile.remote.data.remote.LmsClient
 import com.daphile.remote.data.remote.LmsParser
+import com.daphile.remote.data.remote.WolClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -117,6 +119,10 @@ class DaphileRepository(
 
     private val _scanStatus = MutableStateFlow<ScanStatus?>(null)
     val scanStatus: StateFlow<ScanStatus?> = _scanStatus.asStateFlow()
+
+    private val _wakeState = MutableStateFlow(WakeState.Idle)
+    val wakeState: StateFlow<WakeState> = _wakeState.asStateFlow()
+    private var lastAutoWakeAt = 0L
 
     private var sessionJob: Job? = null
     private var sleepJob: Job? = null
@@ -240,9 +246,22 @@ class DaphileRepository(
                 _lastError.value = friendlyErrorMessage(error)
                 _serverInfo.value = null
                 lastPlayersRefreshAt = 0L
+                if (settings.appSettings.first().autoWake) {
+                    autoWakeIfNeeded(serverConfig, disconnectedFor)
+                }
                 delay(min(60_000L, 1_000L shl min(failures, 6)))
             }
         }
+    }
+
+    private fun autoWakeIfNeeded(serverConfig: ServerConfig, disconnectedFor: Long) {
+        if (disconnectedFor < 10_000L) return
+        if (serverConfig.macAddress.isBlank()) return
+        if (_wakeState.value == WakeState.Waking) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastAutoWakeAt < 60_000L) return
+        lastAutoWakeAt = now
+        scope.launch { runCatching { wakeHost() } }
     }
 
     private suspend fun refreshPlayers(serverConfig: ServerConfig) {
@@ -777,6 +796,34 @@ class DaphileRepository(
         client.hostAction(serverConfig, action)
     }
 
+    /**
+     * 网络唤醒：发送魔术包后轮询 LMS，直到主机上线或超时。
+     *
+     * 主机上线后会自动重连会话，界面上无需再手动点「重新连接」。
+     */
+    suspend fun wakeHost(timeoutMs: Long = 90_000) {
+        val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
+        if (serverConfig.macAddress.isBlank()) {
+            throw LmsException(LmsError.Network, "请先在服务器设置中填写 MAC 地址")
+        }
+        _wakeState.value = WakeState.Waking
+        if (!WolClient.wake(serverConfig.macAddress, serverConfig.host)) {
+            _wakeState.value = WakeState.Failed
+            throw LmsException(LmsError.Network, "唤醒包发送失败，请确认手机与主机在同一局域网")
+        }
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < deadline) {
+            delay(2_000)
+            if (runCatching { client.players(serverConfig) }.isSuccess) {
+                _wakeState.value = WakeState.Online
+                retryConnection()
+                return
+            }
+        }
+        _wakeState.value = WakeState.Failed
+        throw LmsException(LmsError.Network, "主机未在 90 秒内响应，请确认主机 BIOS 与网卡已启用网络唤醒")
+    }
+
     suspend fun startScan(full: Boolean) {
         val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
         client.startScan(serverConfig, full)
@@ -962,6 +1009,9 @@ class DaphileRepository(
 
     suspend fun setHostPowerEnabled(enabled: Boolean) =
         settings.setHostPowerEnabled(enabled)
+
+    suspend fun setAutoWake(enabled: Boolean) =
+        settings.setAutoWake(enabled)
 
     suspend fun albums(
         start: Int,

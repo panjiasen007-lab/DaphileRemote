@@ -17,6 +17,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val connection = repository.connection
     val appSettings = repository.appSettings
     val players = repository.players
+    val wakeState = repository.wakeState
 
     suspend fun testServer(serverConfig: ServerConfig): ServerInfo =
         repository.testServer(serverConfig)
@@ -48,6 +49,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         repository.setLockScreenControls(enabled)
 
     suspend fun hostAction(action: HostPowerAction) = repository.hostPower(action)
+
+    suspend fun setAutoWake(enabled: Boolean) = repository.setAutoWake(enabled)
+
+    suspend fun wakeHost() = repository.wakeHost()
 
     suspend fun rescan() = repository.rescan()
 

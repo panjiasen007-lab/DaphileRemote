@@ -10,7 +10,9 @@ data class ServerConfig(
     val daphilePort: Int = 80,
     val username: String = "",
     val password: String = "",
-    val useHttps: Boolean = false
+    val useHttps: Boolean = false,
+    /** 网卡 MAC 地址，用于网络唤醒（WOL），格式为 AA:BB:CC:DD:EE:FF；为空表示未配置。 */
+    val macAddress: String = ""
 ) {
     val baseUrl: String
         get() = "${if (useHttps) "https" else "http"}://$host:$port"
@@ -188,7 +190,9 @@ data class AppSettings(
     val onlineMetadataEnabled: Boolean = true,
     val lockScreenControls: Boolean = true,
     val lyricsSource: String = "auto",
-    val language: String = "auto"
+    val language: String = "auto",
+    /** 连接失败时是否自动发送网络唤醒包（需在服务器中配置 MAC）。 */
+    val autoWake: Boolean = false
 )
 
 /** 界面语言。auto 跟随系统，其余为固定语言。 */
@@ -236,6 +240,14 @@ enum class HostPowerAction(val key: String, val title: String, val path: String)
     Restart("restart", "重启主机", "/cgi-bin/Settings?ACTION=restart"),
     Shutdown("shutdown", "关闭主机", "/cgi-bin/Info?ACTION=shutdown"),
     Suspend("suspend", "挂起主机", "/cgi-bin/Info?ACTION=pmsuspend")
+}
+
+/** 网络唤醒的进度状态。 */
+enum class WakeState {
+    Idle,
+    Waking,
+    Online,
+    Failed
 }
 
 data class LyricLine(val timeMs: Long, val text: String)

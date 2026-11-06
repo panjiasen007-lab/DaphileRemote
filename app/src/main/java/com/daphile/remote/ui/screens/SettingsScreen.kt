@@ -43,6 +43,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -66,6 +68,7 @@ import com.daphile.remote.BuildConfig
 import com.daphile.remote.data.model.ConnectionState
 import com.daphile.remote.data.model.AppLanguage
 import com.daphile.remote.data.model.HostPowerAction
+import com.daphile.remote.data.model.WakeState
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.PageHeader
 import com.daphile.remote.ui.i18n.languageDisplayName
@@ -85,6 +88,7 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
     val connection by viewModel.connection.collectAsStateWithLifecycle()
     val settings by viewModel.appSettings.collectAsStateWithLifecycle()
     val players by viewModel.players.collectAsStateWithLifecycle()
+    val wakeState by viewModel.wakeState.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val snackbar = remember { SnackbarHostState() }
@@ -346,6 +350,68 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                     PowerButton(t.suspend, Modifier.weight(1f)) {
                         powerAction = HostPowerAction.Suspend
                     }
+                }
+                Spacer(Modifier.height(8.dp))
+                val macConfigured = !server?.macAddress.isNullOrBlank()
+                val waking = wakeState == WakeState.Waking
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            try {
+                                viewModel.wakeHost()
+                                snackbar.showSnackbar(t.wolOnline)
+                            } catch (error: Throwable) {
+                                if (wakeState == WakeState.Failed) {
+                                    snackbar.showSnackbar(t.wolTimeout)
+                                } else {
+                                    snackbar.showSnackbar(friendlyErrorMessage(error))
+                                }
+                            }
+                        }
+                    },
+                    enabled = server != null && macConfigured && !waking,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (waking) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(t.wolWaking)
+                    } else {
+                        Text(t.wol)
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = when {
+                        !macConfigured -> t.wolMacMissing
+                        waking -> t.wolWaking
+                        wakeState == WakeState.Online -> t.wolOnline
+                        wakeState == WakeState.Failed -> t.wolTimeout
+                        else -> t.wolHint
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(t.wolAuto, style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = t.wolAutoHint,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = settings.autoWake,
+                        onCheckedChange = { enabled ->
+                            scope.launch { viewModel.setAutoWake(enabled) }
+                        },
+                        enabled = server != null && macConfigured
+                    )
                 }
             }
 
