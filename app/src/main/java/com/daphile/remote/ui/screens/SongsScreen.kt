@@ -121,6 +121,14 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
         }
     }
 
+    // 进入全部歌曲页即把当前在播曲目滚动到可见区（无头部，直接是曲目）
+    val currentTrackId = nowPlaying?.track?.id
+    LaunchedEffect(items, currentTrackId) {
+        if (items.isEmpty() || currentTrackId.isNullOrBlank()) return@LaunchedEffect
+        val target = items.indexOfFirst { it.id == currentTrackId }
+        if (target >= 0) listState.scrollToItem(target)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(

@@ -780,6 +780,27 @@ class DaphileRepository(
         refreshAfterCommand(queueChanged = true)
     }
 
+    /**
+     * 把电台 / 串流条目追加到当前播放队列，而不打断正在播放的内容。
+     * - 有直链（含 http 串流）时用 `playlist add <url> <title>`；
+     * - 插件条目用 `<cmd> playlist add item_id:<id>`；
+     * - 收藏条目用 `favorites playlist add item_id:<id>`。
+     */
+    suspend fun queueBrowserItem(pluginCmd: String?, item: BrowserItem) {
+        when {
+            item.url.isNotBlank() && (item.isAudio || item.url.startsWith("http")) -> {
+                sendCurrent("playlist", "add", item.url, item.name)
+            }
+            pluginCmd != null -> {
+                sendCurrent(pluginCmd, "playlist", "add", "item_id:${item.id}")
+            }
+            else -> {
+                sendCurrent("favorites", "playlist", "add", "item_id:${item.id}")
+            }
+        }
+        refreshAfterCommand(queueChanged = true)
+    }
+
     suspend fun randomAlbum() {
         val serverConfig = _server.value ?: throw LmsException(LmsError.Network, "尚未连接服务器")
         val album = client.randomAlbum(serverConfig) ?: throw LmsException(LmsError.Empty, "音乐库为空")

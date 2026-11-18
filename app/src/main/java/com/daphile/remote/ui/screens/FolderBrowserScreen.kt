@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -162,7 +162,9 @@ fun FolderBrowserScreen(navController: NavController, modifier: Modifier = Modif
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    items(items = items, key = { it.id }) { item ->
+                    // NAS 目录里不同层/不同文件可能返回相同的 id，直接用 it.id 作 key
+                    // 会触发 "Key was already used" 异常导致强退。叠加 index 保证唯一。
+                    itemsIndexed(items = items, key = { index, item -> "$index:${item.id}" }) { _, item ->
                         if (item.hasItems || item.type == "folder") {
                             FolderRow(
                                 item = item,

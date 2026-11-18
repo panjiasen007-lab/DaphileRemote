@@ -244,7 +244,8 @@ fun QualityBadge(quality: TrackQuality, modifier: Modifier = Modifier) {
 fun CoverArt(
     url: String?,
     modifier: Modifier = Modifier,
-    cornerRadius: Dp = 12.dp
+    cornerRadius: Dp = 12.dp,
+    imageSize: Int = 512
 ) {
     Box(
         modifier = modifier
@@ -264,6 +265,12 @@ fun CoverArt(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(url)
                     .crossfade(true)
+                    // 列表项复用时会反复解码同一张图。限制尺寸并关闭硬件位图，
+                    // 避免三星 One UI / 小米 HyperOS 在快速滚动时因软件画布复用
+                    // 硬件位图（"Software rendering doesn't support hardware bitmaps"）
+                    // 或大图内存峰值触发的强退。
+                    .size(imageSize)
+                    .allowHardware(false)
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,

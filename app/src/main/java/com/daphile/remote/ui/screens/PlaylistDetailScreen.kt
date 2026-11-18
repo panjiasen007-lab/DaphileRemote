@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -67,6 +68,7 @@ fun PlaylistDetailScreen(
     var loading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
+    val listState = rememberLazyListState()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val t = strings
@@ -92,6 +94,15 @@ fun PlaylistDetailScreen(
         } finally {
             loading = false
         }
+    }
+
+    // 进入歌单即把当前在播曲目滚动到可见区；仅依赖列表内容与曲目 id，
+    // 用户手动滚动或播放进度变化都不会打断。
+    val currentTrackId = nowPlaying?.track?.id
+    LaunchedEffect(tracks, currentTrackId) {
+        if (tracks.isEmpty() || currentTrackId.isNullOrBlank()) return@LaunchedEffect
+        val target = tracks.indexOfFirst { it.id == currentTrackId }
+        if (target >= 0) listState.scrollToItem(target + 1)
     }
 
     Box(modifier = modifier.fillMaxSize()) {
@@ -122,7 +133,7 @@ fun PlaylistDetailScreen(
                     title = t.playlistEmptyTitle,
                     body = t.playlistEmptyBody
                 )
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                     item {
                         Row(
                             modifier = Modifier

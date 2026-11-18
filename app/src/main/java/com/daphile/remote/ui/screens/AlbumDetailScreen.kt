@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.PlaylistAdd
@@ -75,6 +76,7 @@ fun AlbumDetailScreen(
     var onlineCover by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
     var trackForPlaylist by remember { mutableStateOf<Track?>(null) }
+    val listState = rememberLazyListState()
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val t = strings
@@ -105,6 +107,14 @@ fun AlbumDetailScreen(
         }
     }
 
+    // 进入专辑即把当前在播曲目滚动到可见区（头部信息占 1 个 item）
+    val currentTrackId = nowPlaying?.track?.id
+    LaunchedEffect(tracks, currentTrackId) {
+        if (tracks.isEmpty() || currentTrackId.isNullOrBlank()) return@LaunchedEffect
+        val target = tracks.indexOfFirst { it.id == currentTrackId }
+        if (target >= 0) listState.scrollToItem(target + 1)
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             PageHeader(
@@ -128,7 +138,7 @@ fun AlbumDetailScreen(
                         Text(t.retry)
                     }
                 }
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                     item {
                         val info = album
                         Column(

@@ -13,7 +13,7 @@ An Android remote for Daphile / Lyrion Music Server (LMS 9.x), built with Jetpac
 
 - 应用显示名：达菲遥控
 - 包名：`com.daphile.remote`
-- 当前版本：1.8.0（versionCode 11）
+- 当前版本：1.9（versionCode 12）
 - 最低系统：Android 8.0（API 26），目标 API 35
 
 ### 功能
@@ -166,6 +166,7 @@ app/src/main/java/com/daphile/remote/
 
 ### 版本
 
+- 1.9：修复部分机型（三星 Galaxy S24 Ultra、小米 14 Pro 等）浏览网络 NAS 文件夹时下滑闪退（避免重复列表 key 崩溃、限制封面加载尺寸并关闭硬件位图）；预存的广播电台 / 串流服务支持单条加入播放队列；切换歌单 / 专辑 / 歌曲列表时自动滚动定位到当前在播曲目。
 - 1.8.0：新增网络唤醒（Wake-on-LAN）：服务器可填写网卡 MAC 地址，设置页「主机电源控制」新增「网络唤醒」按钮，发送魔术包后自动轮询并在主机上线时重连；新增「连接失败时自动唤醒」开关（默认关闭，断开 10 秒后自动唤醒，60 秒冷却）。主机离线时也可用「仅保存（不测试连接）」保存服务器配置。
 - 1.7.1：随机播放改为客户端真随机（修复每次随机结果固定、且集中在同一专辑的问题，随机专辑同理）；春/夏/秋/冬/太极/熊猫与深色/浅色主题补齐元素化设计（背景、播放场景、封面外框、进度条各自专属），「跟随系统」按系统明暗沿用深色或浅色画面。
 - 1.7.0：新增中国红·朱门、风·流风、花·繁花、雪·初雪、月·望月五套特别版主题，各自拥有独立背景绘制、播放场景、封面外框与进度条造型；修复语言选择对话框无法滚动。
@@ -194,7 +195,7 @@ An Android remote for a Daphile host on your local network: playback control, li
 
 - App label: 达菲遥控 (Daphile Remote)
 - Package: `com.daphile.remote`
-- Current version: 1.8.0 (versionCode 11)
+- Current version: 1.9 (versionCode 12)
 - Minimum: Android 8.0 (API 26), target API 35
 
 ### Features
@@ -347,6 +348,7 @@ app/src/main/java/com/daphile/remote/
 
 ### Versions
 
+- 1.9: Fixed crashes on some devices (Samsung Galaxy S24 Ultra, Xiaomi 14 Pro, etc.) when scrolling down network NAS folders (avoid duplicate list keys, cap cover-art loading size and disable hardware bitmaps); saved radio stations / streaming services can now be added to the play queue individually; playlist / album / song lists auto-scroll to the currently playing track on open.
 - 1.8.0: Added Wake-on-LAN: store the NIC MAC address per server, a "Wake-on-LAN" button in the host power card that sends a magic packet and auto-reconnects once the host is up, and an "Auto wake when offline" switch (off by default; wakes 10 seconds after a disconnect with a 60-second cooldown). Servers can now be saved while the host is offline via "Save without test".
 - 1.7.1: Random playback is now truly random on the client (fixes identical results per call, clustered in one album; random album too); Spring / Summer / Autumn / Winter / Taiji / Panda and the Dark / Light themes now have element-level designs (dedicated backdrop, playback scene, cover frame and slider); "Follow system" reuses the Dark or Light artwork according to the system mode.
 - 1.7.0: Added the China Red, Wind, Flower, Snow and Moon special themes, each with its own backdrop, playback scene, cover frame and slider style; fixed the unscrollable language picker dialog.

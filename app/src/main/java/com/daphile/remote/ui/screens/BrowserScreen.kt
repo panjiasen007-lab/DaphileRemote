@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -124,7 +124,9 @@ fun BrowserScreen(
                         bottom = 24.dp
                     )
                 ) {
-                    items(items = items, key = { it.id }) { item ->
+                    // 插件/收藏返回的条目 id 可能重复，叠加 index 避免重复 key 强退
+                    itemsIndexed(items = items, key = { index, item -> "$index:${item.id}" }) { _, item ->
+                        val canPlay = !(item.hasItems && (item.type == "link" || !item.isAudio))
                         BrowserItemRow(
                             item = item,
                             iconUrl = resolveBrowserIcon(server?.baseUrl.orEmpty(), item.icon),
@@ -142,7 +144,17 @@ fun BrowserScreen(
                                         )
                                     }
                                 }
-                            }
+                            },
+                            onAddToQueue = if (canPlay) {
+                                {
+                                    runCommand {
+                                        viewModel.queueItem(
+                                            pluginCmd.takeIf { source != "favorites" },
+                                            item
+                                        )
+                                    }
+                                }
+                            } else null
                         )
                     }
                 }

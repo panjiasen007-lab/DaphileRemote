@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -42,6 +43,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -281,8 +283,18 @@ fun CustomPlaylistScreen(
     var renameTarget by remember { mutableStateOf<CustomPlaylist?>(null) }
     var deleteTarget by remember { mutableStateOf<CustomPlaylist?>(null) }
     var menu by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
 
     val playlist = playlists.firstOrNull { it.id == playlistId }
+
+    // 进入歌单即把当前在播曲目滚动到可见区（头部操作栏占 1 个 item）
+    val currentTrackId = nowPlaying?.track?.id
+    LaunchedEffect(playlist, currentTrackId) {
+        val tracks = playlist?.tracks.orEmpty()
+        if (tracks.isEmpty() || currentTrackId.isNullOrBlank()) return@LaunchedEffect
+        val target = tracks.indexOfFirst { it.id == currentTrackId }
+        if (target >= 0) listState.scrollToItem(target + 1)
+    }
 
     fun runCommand(successMessage: String? = null, block: suspend () -> Unit) {
         scope.launch {
@@ -337,7 +349,7 @@ fun CustomPlaylistScreen(
                     title = t.emptyPlaylistTitle,
                     body = t.emptyPlaylistBody
                 )
-                else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
+                else -> LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
                     item {
                         Row(
                             modifier = Modifier

@@ -59,4 +59,7 @@ class RadioViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun playItem(pluginCmd: String?, item: BrowserItem) =
         repository.playBrowserItem(pluginCmd, item)
+
+    suspend fun queueItem(pluginCmd: String?, item: BrowserItem) =
+        repository.queueBrowserItem(pluginCmd, item)
 }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.rounded.Radio
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -136,6 +138,9 @@ fun RadioScreen(navController: NavController, modifier: Modifier = Modifier) {
                         onPlay = { item ->
                             runCommand { viewModel.playFavorite(item.id) }
                         },
+                        onAddToQueue = { item ->
+                            runCommand { viewModel.queueItem(null, item) }
+                        },
                         onPlayAll = {
                             runCommand { viewModel.favoritesToQueue(play = true) }
                         },
@@ -189,6 +194,7 @@ private fun FavoritesTab(
     serverIconUrl: (String) -> String?,
     onOpenFolder: (BrowserItem) -> Unit,
     onPlay: (BrowserItem) -> Unit,
+    onAddToQueue: (BrowserItem) -> Unit,
     onPlayAll: () -> Unit,
     onQueueAll: () -> Unit
 ) {
@@ -236,12 +242,13 @@ private fun FavoritesTab(
                 }
             }
         }
-        items(items = favorites, key = { it.id }) { item ->
+        itemsIndexed(items = favorites, key = { index, item -> "$index:${item.id}" }) { _, item ->
             BrowserItemRow(
                 item = item,
                 iconUrl = serverIconUrl(item.icon),
                 fallbackIcon = Icons.Rounded.FavoriteBorder,
-                onClick = { if (item.hasItems) onOpenFolder(item) else onPlay(item) }
+                onClick = { if (item.hasItems) onOpenFolder(item) else onPlay(item) },
+                onAddToQueue = { onAddToQueue(item) }
             )
         }
     }
@@ -317,7 +324,8 @@ internal fun BrowserItemRow(
     item: BrowserItem,
     iconUrl: String?,
     fallbackIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onAddToQueue: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -361,6 +369,16 @@ internal fun BrowserItemRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+        if (onAddToQueue != null) {
+            IconButton(onClick = onAddToQueue) {
+                Icon(
+                    imageVector = Icons.Rounded.PlaylistAdd,
+                    contentDescription = strings.addToQueue,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
