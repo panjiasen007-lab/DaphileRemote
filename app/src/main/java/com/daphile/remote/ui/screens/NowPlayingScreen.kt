@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -1152,7 +1153,17 @@ private fun QueueSheetContent(
     onGoLibrary: () -> Unit
 ) {
     val queue = nowPlaying?.queue.orEmpty()
+    val currentIndex = nowPlaying?.currentIndex
+    val listState = rememberLazyListState()
     val t = strings
+    // 当前曲目在队列中的位置；以位置为依赖，避免轮询刷新 queue 对象时打断用户手动滚动
+    val targetIndex = if (queue.isNotEmpty() && currentIndex != null) {
+        queue.indexOfFirst { it.index == currentIndex }
+    } else -1
+    // 打开队列或切歌时把当前在播曲目滚动到可见区，避免从第一首往下找
+    LaunchedEffect(targetIndex) {
+        if (targetIndex >= 0) listState.scrollToItem(targetIndex)
+    }
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
@@ -1188,7 +1199,10 @@ private fun QueueSheetContent(
                 onAction = onGoLibrary
             )
         } else {
-            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 540.dp)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 540.dp),
+                state = listState
+            ) {
                 items(items = queue, key = { it.index }) { item ->
                     TrackRow(
                         track = item,
