@@ -21,7 +21,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.GridView
@@ -59,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.daphile.remote.data.model.Album
+import com.daphile.remote.data.model.TrackDisplay
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
@@ -90,6 +91,7 @@ fun AlbumsScreen(
     var sort by rememberSaveable { mutableStateOf(initialSort) }
     var items by remember { mutableStateOf<List<Album>>(emptyList()) }
     var total by remember { mutableIntStateOf(0) }
+    var hasMore by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -114,7 +116,7 @@ fun AlbumsScreen(
     }
 
     suspend fun loadMore() {
-        if (loading || items.size >= total) return
+        if (loading || !hasMore) return
         loading = true
         errorText = null
         try {
@@ -126,8 +128,17 @@ fun AlbumsScreen(
                 genreId = genreId,
                 year = year
             )
-            items = items + page.items
-            total = page.total
+            val known = items.map { it.id }.toSet()
+            val fresh = page.items.filterNot { it.id in known }
+            if (fresh.isEmpty()) {
+                // sort:new 等排序下数据集可能变动，服务端重复返回同一页时立即停止，避免死循环与重复 key
+                hasMore = false
+                total = items.size
+            } else {
+                items = items + fresh
+                total = page.total
+                hasMore = page.hasMore
+            }
         } catch (error: Throwable) {
             errorText = friendlyErrorMessage(error)
         } finally {
@@ -138,6 +149,7 @@ fun AlbumsScreen(
     LaunchedEffect(sort, artistId, genreId, year, reloadKey) {
         items = emptyList()
         total = 0
+        hasMore = false
         errorText = null
         loading = true
         try {
@@ -151,6 +163,7 @@ fun AlbumsScreen(
             )
             items = page.items
             total = page.total
+            hasMore = page.hasMore
         } catch (error: Throwable) {
             errorText = friendlyErrorMessage(error)
         } finally {
@@ -158,8 +171,8 @@ fun AlbumsScreen(
         }
     }
 
-    LaunchedEffect(lastVisible, items.size, loading) {
-        if (!loading && items.size < total && lastVisible >= items.size - 4) {
+    LaunchedEffect(lastVisible, items.size, loading, hasMore) {
+        if (!loading && hasMore && lastVisible >= items.size - 4) {
             loadMore()
         }
     }
@@ -247,7 +260,7 @@ fun AlbumsScreen(
                 verticalArrangement = Arrangement.spacedBy(if (grid) 16.dp else 2.dp)
             ) {
                 if (grid) {
-                    items(items = items, key = { it.id }) { album ->
+                    itemsIndexed(items = items, key = { index, album -> "$index:${album.id}" }) { _, album ->
                         AlbumGridCard(
                             album = album,
                             coverUrl = server?.coverUrl(album.artworkId),
@@ -256,7 +269,7 @@ fun AlbumsScreen(
                         )
                     }
                 } else {
-                    items(items = items, key = { it.id }) { album ->
+                    itemsIndexed(items = items, key = { index, album -> "$index:${album.id}" }) { _, album ->
                         AlbumListRow(
                             album = album,
                             coverUrl = server?.coverUrl(album.artworkId),
@@ -278,14 +291,14 @@ fun AlbumsScreen(
                             )
                         }
                     }
-                } else if (items.size < total) {
+                } else if (hasMore) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Box(
                             modifier = Modifier.fillMaxWidth().padding(12.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             TextButton(onClick = { scope.launch { loadMore() } }) {
-                                Text(t.loadMore.format(items.size, total))
+                                Text(t.loadMoreShort.format(items.size))
                             }
                         }
                     }
@@ -304,8 +317,14 @@ fun AlbumsScreen(
     actionAlbum?.let { album ->
         AlertDialog(
             onDismissRequest = { actionAlbum = null },
-            title = { Text(album.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
-            text = { Text(listOf(album.artist, album.year).filter { it.isNotBlank() && it != "0" }.joinToString(" · ")) },
+            title = { Text(TrackDisplay.text(album.title), maxLines = 2, overflow = TextOverflow.Ellipsis) },
+            text = {
+                Text(
+                    listOf(TrackDisplay.text(album.artist), album.year)
+                        .filter { it.isNotBlank() && it != "0" }
+                        .joinToString(" · ")
+                )
+            },
             confirmButton = {
                 TextButton(onClick = {
                     actionAlbum = null
@@ -349,14 +368,14 @@ private fun AlbumGridCard(
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            text = album.title,
+            text = TrackDisplay.text(album.title),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis
         )
         Text(
-            text = album.artist,
+            text = TrackDisplay.text(album.artist),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -383,13 +402,14 @@ private fun AlbumListRow(
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = album.title,
+                text = TrackDisplay.text(album.title),
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = listOf(album.artist, album.year).filter { it.isNotBlank() }.joinToString(" · "),
+                text = listOf(TrackDisplay.text(album.artist), album.year)
+                    .filter { it.isNotBlank() }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

@@ -289,6 +289,28 @@ fun SettingsScreen(navController: NavController, modifier: Modifier = Modifier) 
                 icon = Icons.Rounded.Language,
                 onClick = { showLanguageDialog = true }
             )
+            SettingsRow(
+                title = t.titleFromFileName,
+                trailing = {
+                    Switch(
+                        checked = settings.useFileNameAsTitle,
+                        onCheckedChange = { enabled ->
+                            runCommand { viewModel.setUseFileNameAsTitle(enabled) }
+                        }
+                    )
+                }
+            )
+            SettingsRow(
+                title = t.fixGarbledText,
+                trailing = {
+                    Switch(
+                        checked = settings.fixGarbledText,
+                        onCheckedChange = { enabled ->
+                            runCommand { viewModel.setFixGarbledText(enabled) }
+                        }
+                    )
+                }
+            )
 
             SettingsSectionTitle(t.storageSection)
             SettingsRow(

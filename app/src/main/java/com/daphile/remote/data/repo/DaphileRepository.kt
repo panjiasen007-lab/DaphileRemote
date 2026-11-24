@@ -30,6 +30,7 @@ import com.daphile.remote.data.model.ServerConfig
 import com.daphile.remote.data.model.ServerInfo
 import com.daphile.remote.data.model.SleepAction
 import com.daphile.remote.data.model.Track
+import com.daphile.remote.data.model.TrackDisplay
 import com.daphile.remote.data.model.YearItem
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.data.online.OnlineMetadataService
@@ -52,6 +53,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -85,7 +87,9 @@ class DaphileRepository(
         settings.servers.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     val appSettings: StateFlow<AppSettings> =
-        settings.appSettings.stateIn(scope, SharingStarted.Eagerly, AppSettings())
+        settings.appSettings
+            .onEach { TrackDisplay.configure(it) }
+            .stateIn(scope, SharingStarted.Eagerly, AppSettings())
 
     val customPlaylists: StateFlow<List<CustomPlaylist>> =
         settings.customPlaylists.stateIn(scope, SharingStarted.Eagerly, emptyList())
@@ -1033,6 +1037,12 @@ class DaphileRepository(
 
     suspend fun setAutoWake(enabled: Boolean) =
         settings.setAutoWake(enabled)
+
+    suspend fun setUseFileNameAsTitle(enabled: Boolean) =
+        settings.setUseFileNameAsTitle(enabled)
+
+    suspend fun setFixGarbledText(enabled: Boolean) =
+        settings.setFixGarbledText(enabled)
 
     suspend fun albums(
         start: Int,

@@ -52,6 +52,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     suspend fun setAutoWake(enabled: Boolean) = repository.setAutoWake(enabled)
 
+    suspend fun setUseFileNameAsTitle(enabled: Boolean) =
+        repository.setUseFileNameAsTitle(enabled)
+
+    suspend fun setFixGarbledText(enabled: Boolean) =
+        repository.setFixGarbledText(enabled)
+
     suspend fun wakeHost() = repository.wakeHost()
 
     suspend fun rescan() = repository.rescan()

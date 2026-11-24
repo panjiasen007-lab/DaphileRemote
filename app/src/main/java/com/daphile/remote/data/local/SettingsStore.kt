@@ -46,6 +46,8 @@ class SettingsStore(
         val lyricsSource = stringPreferencesKey("lyrics_source")
         val language = stringPreferencesKey("app_language")
         val autoWake = booleanPreferencesKey("auto_wake")
+        val useFileNameAsTitle = booleanPreferencesKey("use_file_name_as_title")
+        val fixGarbledText = booleanPreferencesKey("fix_garbled_text")
         val customPlaylists = stringPreferencesKey("custom_playlists")
         val dailyRecommendation = stringPreferencesKey("daily_recommendation")
         fun playerFor(serverId: String) = stringPreferencesKey("player_$serverId")
@@ -77,7 +79,9 @@ class SettingsStore(
             lockScreenControls = preferences[Keys.lockScreenControls] ?: true,
             lyricsSource = preferences[Keys.lyricsSource] ?: "auto",
             language = preferences[Keys.language] ?: "auto",
-            autoWake = preferences[Keys.autoWake] ?: false
+            autoWake = preferences[Keys.autoWake] ?: false,
+            useFileNameAsTitle = preferences[Keys.useFileNameAsTitle] ?: false,
+            fixGarbledText = preferences[Keys.fixGarbledText] ?: true
         )
     }
 
@@ -165,6 +169,14 @@ class SettingsStore(
 
     suspend fun setAutoWake(enabled: Boolean) {
         context.settingsDataStore.edit { it[Keys.autoWake] = enabled }
+    }
+
+    suspend fun setUseFileNameAsTitle(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.useFileNameAsTitle] = enabled }
+    }
+
+    suspend fun setFixGarbledText(enabled: Boolean) {
+        context.settingsDataStore.edit { it[Keys.fixGarbledText] = enabled }
     }
 
     val customPlaylists: Flow<List<CustomPlaylist>> = safeData.map { preferences ->

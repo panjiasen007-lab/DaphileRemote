@@ -138,7 +138,17 @@ data class SearchResults(
     val playlists: List<PlaylistSummary> = emptyList()
 )
 
-data class Paged<T>(val total: Int, val items: List<T>)
+/**
+ * 分页结果。
+ *
+ * LMS 的 `count` 字段在多数命令里表示「本次返回的条数」而不是曲库总数，
+ * 因此翻页是否结束由 [hasMore] 决定：[total] 只是目前已知的下界（或 count=0 全量查询时的精确值）。
+ */
+data class Paged<T>(
+    val total: Int,
+    val items: List<T>,
+    val hasMore: Boolean = false
+)
 
 data class ServerInfo(
     val version: String = "",
@@ -192,7 +202,11 @@ data class AppSettings(
     val lyricsSource: String = "auto",
     val language: String = "auto",
     /** 连接失败时是否自动发送网络唤醒包（需在服务器中配置 MAC）。 */
-    val autoWake: Boolean = false
+    val autoWake: Boolean = false,
+    /** 曲名优先使用 LMS url 中的文件名（去掉扩展名），适合标签缺失或标签乱码的 NAS 曲库。 */
+    val useFileNameAsTitle: Boolean = false,
+    /** 自动修复 UTF-8/GBK 被 Latin-1 等编码误读产生的乱码。 */
+    val fixGarbledText: Boolean = true
 )
 
 /** 界面语言。auto 跟随系统，其余为固定语言。 */

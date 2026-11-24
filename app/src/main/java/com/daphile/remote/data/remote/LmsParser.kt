@@ -20,6 +20,26 @@ import kotlin.math.abs
 object LmsParser {
     const val TRACK_TAGS = "cdelgoaIirstTyquQ"
 
+    /**
+     * 计算分页边界。
+     *
+     * LMS 的 `count` 在 albums/titles 等命令里只表示本次返回的条数，
+     * 用它会把 501 张专辑误判成 100 张。这里按「请求条数是否已全部返回」判断
+     * 是否还有下一页；count=0 的全量查询返回的才是精确总数。
+     */
+    fun pageInfo(
+        result: JSONObject,
+        rawCount: Int,
+        start: Int,
+        requested: Int
+    ): Pair<Int, Boolean> {
+        val reported = intAny(result, "count", default = rawCount)
+        if (requested <= 0) return maxOf(reported, rawCount) to false
+        val more = rawCount >= requested
+        val known = start + rawCount
+        return maxOf(if (more) known + 1 else known, reported) to more
+    }
+
     fun parseServerInfo(result: JSONObject): ServerInfo = ServerInfo(
         version = stringAny(result, "version"),
         ip = stringAny(result, "ip"),
@@ -132,8 +152,13 @@ object LmsParser {
         channels = intAny(item, "channels", "channelcount")
     )
 
-    fun parseAlbums(result: JSONObject): Paged<Album> {
-        val loop = objectArray(result, "albums_loop") ?: objectLoop(result)
+    fun parseAlbums(
+        result: JSONObject,
+        start: Int = 0,
+        requested: Int = -1
+    ): Paged<Album> {
+        val array = objectArray(result, "albums_loop")
+        val loop = array ?: objectLoop(result)
         val items = loop.mapNotNull { item ->
             val id = stringAny(item, "id", "album_id")
             if (id.isBlank()) return@mapNotNull null
@@ -146,54 +171,83 @@ object LmsParser {
                 trackCount = intAny(item, "trackcount", "track_count")
             )
         }
-        return Paged(intAny(result, "count", default = items.size), items)
+        val (total, more) = pageInfo(result, array?.size ?: items.size, start, requested)
+        return Paged(total, items, more)
     }
 
-    fun parseArtists(result: JSONObject): Paged<Artist> {
-        val loop = objectArray(result, "artists_loop") ?: objectLoop(result)
+    fun parseArtists(
+        result: JSONObject,
+        start: Int = 0,
+        requested: Int = -1
+    ): Paged<Artist> {
+        val array = objectArray(result, "artists_loop")
+        val loop = array ?: objectLoop(result)
         val items = loop.mapNotNull { item ->
             val id = stringAny(item, "id", "artist_id")
             val name = stringAny(item, "artist", "name")
             if (id.isBlank() || name.isBlank()) null else Artist(id, name)
         }
-        return Paged(intAny(result, "count", default = items.size), items)
+        val (total, more) = pageInfo(result, array?.size ?: items.size, start, requested)
+        return Paged(total, items, more)
     }
 
-    fun parseGenres(result: JSONObject): Paged<Genre> {
-        val loop = objectArray(result, "genres_loop") ?: objectLoop(result)
+    fun parseGenres(
+        result: JSONObject,
+        start: Int = 0,
+        requested: Int = -1
+    ): Paged<Genre> {
+        val array = objectArray(result, "genres_loop")
+        val loop = array ?: objectLoop(result)
         val items = loop.mapNotNull { item ->
             val id = stringAny(item, "id", "genre_id")
             val name = stringAny(item, "genre", "name")
             if (id.isBlank() || name.isBlank()) null else Genre(id, name)
         }
-        return Paged(intAny(result, "count", default = items.size), items)
+        val (total, more) = pageInfo(result, array?.size ?: items.size, start, requested)
+        return Paged(total, items, more)
     }
 
-    fun parseYears(result: JSONObject): Paged<YearItem> {
+    fun parseYears(
+        result: JSONObject,
+        start: Int = 0,
+        requested: Int = -1
+    ): Paged<YearItem> {
         val items = objectLoop(result).mapNotNull { item ->
             val year = stringAny(item, "year")
             if (year.isBlank()) null else YearItem(year)
         }.distinctBy { it.year }
-        return Paged(intAny(result, "count", default = items.size), items)
+        val (total, more) = pageInfo(result, items.size, start, requested)
+        return Paged(total, items, more)
     }
 
-    fun parsePlaylists(result: JSONObject): Paged<PlaylistSummary> {
-        val loop = objectArray(result, "playlists_loop") ?: objectLoop(result)
+    fun parsePlaylists(
+        result: JSONObject,
+        start: Int = 0,
+        requested: Int = -1
+    ): Paged<PlaylistSummary> {
+        val array = objectArray(result, "playlists_loop")
+        val loop = array ?: objectLoop(result)
         val items = loop.mapNotNull { item ->
             val id = stringAny(item, "id", "playlist_id")
             val name = stringAny(item, "name", "playlist")
             if (id.isBlank() || name.isBlank()) null else PlaylistSummary(id, name)
         }
-        return Paged(intAny(result, "count", default = items.size), items)
+        val (total, more) = pageInfo(result, array?.size ?: items.size, start, requested)
+        return Paged(total, items, more)
     }
 
-    fun parseTracks(result: JSONObject): Paged<Track> {
-        val loop = objectArray(result, "titles_loop")
+    fun parseTracks(
+        result: JSONObject,
+        start: Int = 0,
+        requested: Int = -1
+    ): Paged<Track> {
+        val array = objectArray(result, "titles_loop")
             ?: objectArray(result, "tracks_loop")
             ?: objectArray(result, "songs_loop")
-            ?: objectLoop(result)
+        val loop = array ?: objectLoop(result)
         val items = loop.mapIndexed { index, item -> parseTrack(item, index) }
-        return Paged(intAny(result, "count", default = items.size), items)
+        val (total, more) = pageInfo(result, array?.size ?: items.size, start, requested)
+        return Paged(total, items, more)
     }
 
     fun parseSearch(query: String, result: JSONObject): SearchResults {

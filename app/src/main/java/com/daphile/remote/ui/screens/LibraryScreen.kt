@@ -67,6 +67,7 @@ import com.daphile.remote.data.model.Album
 import com.daphile.remote.data.model.Artist
 import com.daphile.remote.data.model.SearchResults
 import com.daphile.remote.data.model.Track
+import com.daphile.remote.data.model.TrackDisplay
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
@@ -680,7 +681,7 @@ private fun SearchAlbumRow(album: Album, coverUrl: String?, onClick: () -> Unit)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = album.title,
+                text = TrackDisplay.text(album.title),
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis

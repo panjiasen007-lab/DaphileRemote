@@ -64,6 +64,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.daphile.remote.data.model.Lyrics
 import com.daphile.remote.data.model.LyricsSource
+import com.daphile.remote.data.model.TrackDisplay
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.EmptyState
 import com.daphile.remote.ui.common.PageHeader
@@ -91,6 +92,7 @@ fun LyricsScreen(navController: NavController, modifier: Modifier = Modifier) {
     val savedPath by viewModel.savedPath.collectAsStateWithLifecycle()
     val lyricsSource by viewModel.source.collectAsStateWithLifecycle()
     val notice by viewModel.notice.collectAsStateWithLifecycle()
+    val displaySettings by TrackDisplay.settings.collectAsStateWithLifecycle()
     var sourceMenu by remember { mutableStateOf(false) }
     val t = strings
 
@@ -215,7 +217,10 @@ fun LyricsScreen(navController: NavController, modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = listOfNotNull(track?.title, track?.artist)
+                    text = listOfNotNull(
+                        track?.let { TrackDisplay.title(it, displaySettings) },
+                        track?.artist?.let { TrackDisplay.artist(it, displaySettings) }
+                    )
                         .filter { it.isNotBlank() }
                         .joinToString(" · ")
                         .ifBlank { t.noCurrentTrack },

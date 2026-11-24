@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,6 +39,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,6 +48,7 @@ import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
 import com.daphile.remote.data.model.ConnectionState
 import com.daphile.remote.data.model.Track
+import com.daphile.remote.data.model.TrackDisplay
 import com.daphile.remote.ui.i18n.strings
 import java.util.Locale
 
@@ -424,6 +427,7 @@ fun TrackRow(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null
 ) {
+    val displaySettings by TrackDisplay.settings.collectAsStateWithLifecycle()
     val background = if (isCurrent) {
         MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
     } else {
@@ -469,7 +473,7 @@ fun TrackRow(
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = track.title.ifBlank { strings.unknownTrack },
+                    text = TrackDisplay.title(track, displaySettings).ifBlank { strings.unknownTrack },
                     modifier = Modifier.weight(1f, fill = false),
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
@@ -483,7 +487,10 @@ fun TrackRow(
                     QualityBadge(quality)
                 }
             }
-            val subtitle = listOf(displayArtist(track.artist), track.album)
+            val subtitle = listOf(
+                displayArtist(TrackDisplay.artist(track.artist, displaySettings)),
+                TrackDisplay.album(track.album, displaySettings)
+            )
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
             if (subtitle.isNotBlank()) {

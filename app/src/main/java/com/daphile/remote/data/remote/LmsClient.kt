@@ -140,27 +140,35 @@ class LmsClient {
         artistId?.takeIf { it.isNotBlank() }?.let { command += "artist_id:$it" }
         genreId?.takeIf { it.isNotBlank() }?.let { command += "genre_id:$it" }
         year?.takeIf { it.isNotBlank() }?.let { command += "year:$it" }
-        return LmsParser.parseAlbums(request(server, "", command))
+        return LmsParser.parseAlbums(request(server, "", command), start, count)
     }
 
     suspend fun artists(server: ServerConfig, start: Int, count: Int): Paged<Artist> =
         LmsParser.parseArtists(
-            request(server, "", listOf("artists", start.toString(), count.toString()))
+            request(server, "", listOf("artists", start.toString(), count.toString())),
+            start,
+            count
         )
 
     suspend fun genres(server: ServerConfig, start: Int, count: Int): Paged<Genre> =
         LmsParser.parseGenres(
-            request(server, "", listOf("genres", start.toString(), count.toString()))
+            request(server, "", listOf("genres", start.toString(), count.toString())),
+            start,
+            count
         )
 
     suspend fun years(server: ServerConfig, start: Int, count: Int): Paged<YearItem> =
         LmsParser.parseYears(
-            request(server, "", listOf("years", start.toString(), count.toString()))
+            request(server, "", listOf("years", start.toString(), count.toString())),
+            start,
+            count
         )
 
     suspend fun playlists(server: ServerConfig, start: Int, count: Int): Paged<PlaylistSummary> =
         LmsParser.parsePlaylists(
-            request(server, "", listOf("playlists", start.toString(), count.toString()))
+            request(server, "", listOf("playlists", start.toString(), count.toString())),
+            start,
+            count
         )
 
     suspend fun albumInfo(server: ServerConfig, albumId: String): Album? =
@@ -201,7 +209,9 @@ class LmsClient {
                 server,
                 "",
                 listOf("titles", start.toString(), count.toString(), "tags:${LmsParser.TRACK_TAGS}")
-            )
+            ),
+            start,
+            count
         )
 
     /** 随机抽取 [count] 首曲目（服务端排序，不会重复）。 */
@@ -269,7 +279,11 @@ class LmsClient {
         parentId?.takeIf { it.isNotBlank() && it != "0" }?.let { command += "folder_id:$it" }
         val result = request(server, "", command)
         val items = LmsParser.parseBrowserItems(result)
-        return Paged(result.optInt("count", items.size), items)
+        val rawCount = result.optJSONArray("item_loop")?.length()
+            ?: result.optJSONArray("folder_loop")?.length()
+            ?: items.size
+        val (total, more) = LmsParser.pageInfo(result, rawCount, start, count)
+        return Paged(total, items, more)
     }
 
     suspend fun songInfo(server: ServerConfig, trackId: String): JSONObject =

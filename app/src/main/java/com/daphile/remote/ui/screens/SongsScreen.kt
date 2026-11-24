@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MusicNote
@@ -58,12 +58,14 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
     val viewModel: LibraryViewModel = viewModel()
     val server by viewModel.server.collectAsStateWithLifecycle()
     val nowPlaying by viewModel.nowPlaying.collectAsStateWithLifecycle()
+    val serverInfo by viewModel.serverInfo.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
 
     var items by remember { mutableStateOf<List<Track>>(emptyList()) }
     var total by remember { mutableIntStateOf(0) }
+    var hasMore by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(true) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -86,12 +88,20 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
     }
 
     suspend fun loadMore() {
-        if (loading || items.size >= total) return
+        if (loading || !hasMore) return
         loading = true
         try {
             val page = viewModel.fetchSongs(items.size, SONG_PAGE_SIZE)
-            items = items + page.items
-            total = page.total
+            val known = items.map { it.id to it.index }.toSet()
+            val fresh = page.items.filterNot { it.id to it.index in known }
+            if (fresh.isEmpty()) {
+                hasMore = false
+                total = items.size
+            } else {
+                items = items + fresh
+                total = page.total
+                hasMore = page.hasMore
+            }
         } catch (error: Throwable) {
             errorText = friendlyErrorMessage(error)
         } finally {
@@ -104,10 +114,12 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
         errorText = null
         items = emptyList()
         total = 0
+        hasMore = false
         try {
             val page = viewModel.fetchSongs(0, SONG_PAGE_SIZE)
             items = page.items
             total = page.total
+            hasMore = page.hasMore
         } catch (error: Throwable) {
             errorText = friendlyErrorMessage(error)
         } finally {
@@ -115,8 +127,8 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
         }
     }
 
-    LaunchedEffect(lastVisible, items.size, loading) {
-        if (!loading && items.size < total && lastVisible >= items.size - 6) {
+    LaunchedEffect(lastVisible, items.size, loading, hasMore) {
+        if (!loading && hasMore && lastVisible >= items.size - 6) {
             loadMore()
         }
     }
@@ -135,7 +147,10 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
                 title = t.songsTitle,
                 onBack = { navController.popBackStack() },
                 actions = {
-                    Text(t.queueTracks.format(total), style = MaterialTheme.typography.labelMedium)
+                    Text(
+                        t.queueTracks.format(serverInfo?.songCount?.takeIf { it > 0 } ?: items.size),
+                        style = MaterialTheme.typography.labelMedium
+                    )
                     IconButton(
                         onClick = { runCommand(t.queueAddedCount) { viewModel.queueAllSongs(play = false) } }
                     ) {
@@ -182,7 +197,7 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-                    items(items = items, key = { "${it.id}:${it.index}" }) { track ->
+                    itemsIndexed(items = items, key = { index, track -> "$index:${track.id}:${track.index}" }) { _, track ->
                         val isCurrent = nowPlaying?.track?.id == track.id && track.id.isNotBlank()
                         TrackRow(
                             track = track,
@@ -217,14 +232,14 @@ fun SongsScreen(navController: NavController, modifier: Modifier = Modifier) {
                                 )
                             }
                         }
-                    } else if (items.size < total) {
+                    } else if (hasMore) {
                         item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 TextButton(onClick = { scope.launch { loadMore() } }) {
-                                    Text(t.loadMore.format(items.size, total))
+                                    Text(t.loadMoreShort.format(items.size))
                                 }
                             }
                         }

@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -158,6 +158,7 @@ private fun <T> SimplePagedScreen(
 ) {
     var items by remember { mutableStateOf<List<T>>(emptyList()) }
     var total by remember { mutableIntStateOf(0) }
+    var hasMore by remember { mutableStateOf(false) }
     var loading by remember { mutableStateOf(false) }
     var errorText by remember { mutableStateOf<String?>(null) }
     var reloadKey by remember { mutableIntStateOf(0) }
@@ -169,13 +170,21 @@ private fun <T> SimplePagedScreen(
     }
 
     suspend fun loadMore() {
-        if (loading || items.size >= total) return
+        if (loading || !hasMore) return
         loading = true
         errorText = null
         try {
             val page = load(items.size, BROWSE_PAGE)
-            items = items + page.items
-            total = page.total
+            val known = items.map(key).toSet()
+            val fresh = page.items.filterNot { key(it) in known }
+            if (fresh.isEmpty()) {
+                hasMore = false
+                total = items.size
+            } else {
+                items = items + fresh
+                total = page.total
+                hasMore = page.hasMore
+            }
         } catch (error: Throwable) {
             errorText = friendlyErrorMessage(error)
         } finally {
@@ -186,12 +195,14 @@ private fun <T> SimplePagedScreen(
     LaunchedEffect(reloadKey) {
         items = emptyList()
         total = 0
+        hasMore = false
         loading = true
         errorText = null
         try {
             val page = load(0, BROWSE_PAGE)
             items = page.items
             total = page.total
+            hasMore = page.hasMore
         } catch (error: Throwable) {
             errorText = friendlyErrorMessage(error)
         } finally {
@@ -199,8 +210,8 @@ private fun <T> SimplePagedScreen(
         }
     }
 
-    LaunchedEffect(lastVisible, items.size, loading) {
-        if (!loading && items.size < total && lastVisible >= items.size - 3) {
+    LaunchedEffect(lastVisible, items.size, loading, hasMore) {
+        if (!loading && hasMore && lastVisible >= items.size - 3) {
             loadMore()
         }
     }
@@ -237,7 +248,7 @@ private fun <T> SimplePagedScreen(
                     state = listState,
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(items = items, key = key) { item ->
+                    itemsIndexed(items = items, key = { index, item -> "$index:${key(item)}" }) { _, item ->
                         itemContent(item)
                     }
                     if (loading) {
@@ -252,14 +263,14 @@ private fun <T> SimplePagedScreen(
                                 )
                             }
                         }
-                    } else if (items.size < total) {
+                    } else if (hasMore) {
                         item {
                             Box(
                                 modifier = Modifier.fillMaxWidth().padding(12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 TextButton(onClick = { scope.launch { loadMore() } }) {
-                                    Text(t.loadMore.format(items.size, total))
+                                    Text(t.loadMoreShort.format(items.size))
                                 }
                             }
                         }

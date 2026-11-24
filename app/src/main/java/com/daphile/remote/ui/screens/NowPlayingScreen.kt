@@ -116,6 +116,7 @@ import com.daphile.remote.data.model.Player
 import com.daphile.remote.data.model.ServerConfig
 import com.daphile.remote.data.model.SleepAction
 import com.daphile.remote.data.model.Track
+import com.daphile.remote.data.model.TrackDisplay
 import com.daphile.remote.data.model.friendlyErrorMessage
 import com.daphile.remote.ui.common.CoverArt
 import com.daphile.remote.ui.common.EmptyState
@@ -154,6 +155,7 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
     val lyrics by viewModel.lyrics.collectAsStateWithLifecycle()
     val lyricsLoading by viewModel.lyricsLoading.collectAsStateWithLifecycle()
     val favorite by viewModel.favorite.collectAsStateWithLifecycle()
+    val displaySettings by TrackDisplay.settings.collectAsStateWithLifecycle()
 
     val snackbar = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -372,8 +374,8 @@ fun NowPlayingScreen(navController: NavController, modifier: Modifier = Modifier
                 },
                 favorite = favorite,
                 onShare = {
-                    val title = track?.title.orEmpty()
-                    val artist = displayArtist(track?.artist)
+                    val title = track?.let { TrackDisplay.title(it, displaySettings) }.orEmpty()
+                    val artist = displayArtist(track?.artist?.let { TrackDisplay.artist(it, displaySettings) })
                     val shareText = listOf(title, artist)
                         .filter { it.isNotBlank() }
                         .joinToString(" - ")
@@ -929,10 +931,12 @@ private fun PlayerControls(
 @Composable
 private fun NowPlayingHeader(track: Track?, nowPlaying: NowPlaying?) {
     val t = strings
+    val displaySettings by TrackDisplay.settings.collectAsStateWithLifecycle()
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = track?.title?.ifBlank { t.unknownTrack } ?: t.noContent,
+                text = track?.let { TrackDisplay.title(it, displaySettings) }?.ifBlank { t.unknownTrack }
+                    ?: t.noContent,
                 modifier = Modifier.weight(1f, fill = false),
                 style = MaterialTheme.typography.headlineSmall.copy(fontSize = 24.sp),
                 fontWeight = FontWeight.SemiBold,
@@ -947,7 +951,10 @@ private fun NowPlayingHeader(track: Track?, nowPlaying: NowPlaying?) {
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            text = listOfNotNull(displayArtist(track?.artist), track?.album)
+            text = listOfNotNull(
+                displayArtist(track?.artist?.let { TrackDisplay.artist(it, displaySettings) }),
+                track?.album?.let { TrackDisplay.album(it, displaySettings) }
+            )
                 .filter { it.isNotBlank() }
                 .joinToString(" · ")
                 .ifBlank {
