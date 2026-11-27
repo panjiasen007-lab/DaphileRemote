@@ -1,7 +1,7 @@
 # DaphileRemote
 
-Daphile / Lyrion Music Server（LMS 9.x）的 Android 遥控器，界面基于 Jetpack Compose。
-An Android remote for Daphile / Lyrion Music Server (LMS 9.x), built with Jetpack Compose.
+Daphile / Lyrion Music Server（LMS 9.x）的 Android 与 HarmonyOS NEXT 遥控器：Android 基于 Jetpack Compose，鸿蒙基于 ArkTS/ArkUI。
+An Android and HarmonyOS NEXT remote for Daphile / Lyrion Music Server (LMS 9.x): Android built with Jetpack Compose, HarmonyOS built with ArkTS/ArkUI.
 
 [中文](#中文) | [English](#english)
 
@@ -15,6 +15,22 @@ An Android remote for Daphile / Lyrion Music Server (LMS 9.x), built with Jetpac
 - 包名：`com.daphile.remote`
 - 当前版本：1.9.2（versionCode 14）
 - 最低系统：Android 8.0（API 26），目标 API 35
+
+#### HarmonyOS NEXT 版本
+
+原生鸿蒙版本位于 [`harmony/`](harmony/)，功能对齐 1.9.2：
+
+- 包名：`com.daphile.remote`；版本：1.9.2（versionCode 14）；最低 HarmonyOS NEXT 5.0（API 12）
+- 下载：在 [Releases](https://github.com/panjiasen007-lab/DaphileRemote/releases) 获取 `DaphileRemote-1.9.2-harmony.hap`
+- 安装（开发者模式或模拟器）：
+  ```powershell
+  hdc install -r DaphileRemote-1.9.2-harmony.hap
+  ```
+- 自适应布局：手机底部导航；折叠屏图标侧栏；平板/PC 侧边导航与内容限宽。启动时自动识别设备，设置 → 外观 → 界面布局可手动切换（自动 / 手机 / 折叠屏 / 平板 / 电脑）
+- 鸿蒙特有：局域网服务器端口扫描发现、分层应用图标、宽屏歌词居中与同步歌词优先、播放页/队列/歌词页/专辑网格的平板与 PC 适配
+- 构建：用 DevEco Studio 打开 `harmony/` 后执行 Build > Build Hap(s)；或在 DevEco 终端使用自带的 `hvigorw` 执行 `assembleHap`
+- 签名说明：Release 中的 HAP 使用 OpenHarmony 测试证书签名，适合模拟器/开发调试；安装到零售鸿蒙设备请在 DevEco Studio 中使用自己的证书与 Profile 重新签名
+- 迁移方案与完成状态：[docs/harmony-port-plan.md](docs/harmony-port-plan.md)
 
 ### 功能
 
@@ -166,6 +182,7 @@ app/src/main/java/com/daphile/remote/
 
 ### 版本
 
+- 1.9.2 鸿蒙版：原生鸿蒙 ArkTS/ArkUI 重写，功能对齐 Android 1.9.2；新增手机/折叠屏/平板/PC 自适应布局与自动识别、设置内手动切换布局、局域网端口扫描发现、分层应用图标、宽屏歌词居中与同步歌词优化；提供可直接安装的签名 HAP（Releases）。
 - 1.9.2：修复音乐库专辑/歌曲/歌单超过 100 条时无法继续加载（不再把 LMS 的本页 `count` 当作总数，改为按实际返回条数翻页，并防止重复项与重复 key）；新增「曲名按文件名显示」与「自动修复乱码」两个设置（设置 → 外观）；示例地址更新为 `192.168.124.88` / LMS `:9000`。
 - 1.9.1：正在播放页的「播放队列」弹层打开时自动滚动定位到当前在播曲目，无需从第一首手动下拉查找。
 - 1.9：修复部分机型（三星 Galaxy S24 Ultra、小米 14 Pro 等）浏览网络 NAS 文件夹时下滑闪退（避免重复列表 key 崩溃、限制封面加载尺寸并关闭硬件位图）；预存的广播电台 / 串流服务支持单条加入播放队列；切换歌单 / 专辑 / 歌曲列表时自动滚动定位到当前在播曲目。
@@ -199,6 +216,22 @@ An Android remote for a Daphile host on your local network: playback control, li
 - Package: `com.daphile.remote`
 - Current version: 1.9.2 (versionCode 14)
 - Minimum: Android 8.0 (API 26), target API 35
+
+#### HarmonyOS NEXT version
+
+The native HarmonyOS port lives in [`harmony/`](harmony/) and is aligned with 1.9.2:
+
+- Bundle: `com.daphile.remote`; version: 1.9.2 (versionCode 14); minimum HarmonyOS NEXT 5.0 (API 12)
+- Download `DaphileRemote-1.9.2-harmony.hap` from [Releases](https://github.com/panjiasen007-lab/DaphileRemote/releases)
+- Install (developer mode or emulator):
+  ```powershell
+  hdc install -r DaphileRemote-1.9.2-harmony.hap
+  ```
+- Responsive layouts: bottom navigation on phones, icon rail on foldables, side navigation with constrained content on tablets/PCs. The device is detected at launch; Settings → Appearance → Layout lets you switch manually (Auto / Phone / Foldable / Tablet / PC)
+- HarmonyOS extras: LAN server discovery via port scanning, layered app icon, centred wide-screen lyrics with synced-lyrics preference, and tablet/PC tuning for Now Playing, queue, lyrics and album grids
+- Build: open `harmony/` in DevEco Studio and run Build > Build Hap(s), or run `assembleHap` with DevEco's bundled `hvigorw`
+- Signing: the released HAP is signed with the OpenHarmony test certificate for emulators and development. For retail HarmonyOS devices, re-sign it in DevEco Studio with your own certificate and profile
+- Porting plan and status: [docs/harmony-port-plan.md](docs/harmony-port-plan.md)
 
 ### Features
 
@@ -350,6 +383,7 @@ app/src/main/java/com/daphile/remote/
 
 ### Versions
 
+- 1.9.2 (HarmonyOS NEXT): Native ArkTS/ArkUI rewrite aligned with Android 1.9.2; responsive phone/foldable/tablet/PC layouts with auto-detection and manual override, LAN port-scan discovery, layered app icon, centred wide-screen lyrics and synced-lyrics improvements; a signed installable HAP is available in Releases.
 - 1.9.2: Fixed library lists (albums / songs / playlists) stopping at 100 items — LMS `count` is the page size, not the library total, so paging now advances by the number of items actually returned, with duplicate protection; added "Show title from filename" and "Auto-fix garbled text" switches under Settings → Appearance; example address updated to `192.168.124.88` / LMS `:9000`.
 - 1.9.1: The play queue sheet on Now Playing now auto-scrolls to the currently playing track on open, no manual scrolling from the top needed.
 - 1.9: Fixed crashes on some devices (Samsung Galaxy S24 Ultra, Xiaomi 14 Pro, etc.) when scrolling down network NAS folders (avoid duplicate list keys, cap cover-art loading size and disable hardware bitmaps); saved radio stations / streaming services can now be added to the play queue individually; playlist / album / song lists auto-scroll to the currently playing track on open.

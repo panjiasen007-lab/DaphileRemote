@@ -1,0 +1,25 @@
+{
+  "forms": [
+    {
+      "name": "NowPlayingCard",
+      "displayName": "$string:form_display_name",
+      "description": "$string:form_desc",
+      "src": "./ets/form/NowPlayingCard.ets",
+      "uiSyntax": "arkts",
+      "window": {
+        "designWidth": 720,
+        "autoDesignWidth": true
+      },
+      "colorMode": "auto",
+      "isDynamic": false,
+      "isDefault": true,
+      "updateEnabled": true,
+      "scheduledUpdateTime": "10:30",
+      "updateDuration": 1,
+      "defaultDimension": "2*2",
+      "supportDimensions": [
+        "2*2"
+      ]
+    }
+  ]
+}

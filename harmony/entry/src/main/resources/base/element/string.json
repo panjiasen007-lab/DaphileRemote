@@ -1,0 +1,32 @@
+{
+  "string": [
+    {
+      "name": "module_desc",
+      "value": "达菲遥控主模块"
+    },
+    {
+      "name": "EntryAbility_desc",
+      "value": "达菲遥控主界面"
+    },
+    {
+      "name": "EntryAbility_label",
+      "value": "达菲遥控"
+    },
+    {
+      "name": "EntryFormAbility_label",
+      "value": "正在播放"
+    },
+    {
+      "name": "EntryFormAbility_desc",
+      "value": "显示正在播放并控制播放"
+    },
+    {
+      "name": "form_display_name",
+      "value": "正在播放"
+    },
+    {
+      "name": "form_desc",
+      "value": "达菲遥控正在播放卡片"
+    }
+  ]
+}

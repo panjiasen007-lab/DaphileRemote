@@ -11,3 +11,20 @@
 *.apk
 *.aab
 /app/build
+
+# HarmonyOS
+harmony/.hvigor/
+harmony/.idea/
+harmony/**/.idea/
+harmony/.screenshots/
+harmony/**/build/
+harmony/**/oh_modules/
+harmony/**/.preview/
+harmony/local.properties
+harmony/dist/
+harmony/phoneSettingConfig_*.json
+
+# Local tooling / test artifacts
+*.log
+.screenshots/
+.workbuddy/

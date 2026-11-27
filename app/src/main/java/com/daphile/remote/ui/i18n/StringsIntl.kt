@@ -208,6 +208,12 @@ private val zhTWExtra = ExtraStrings(
 )
 
 internal val zhTW = en.copy(
+    layoutMode = "介面配置",
+    layoutAuto = "自動",
+    layoutPhone = "手機",
+    layoutFoldable = "摺疊屏",
+    layoutTablet = "平板",
+    layoutPc = "電腦",
     navNow = "正在播放",
     navLibrary = "音樂庫",
     navRadio = "電台與收藏",
